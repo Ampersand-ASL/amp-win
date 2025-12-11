@@ -25,10 +25,11 @@ add_executable(main
   src/main.cpp
   src/MainWindow.cpp
   src/amp-thread.cpp
+  src/LineRadioWin.cpp
   amp-core/src/EventLoop.cpp
   amp-core/src/Message.cpp
   amp-core/src/Line.cpp
-#  amp-core/src/LineUsb.cpp
+  amp-core/src/LineRadio.cpp
   amp-core/src/LineIAX2.cpp
   amp-core/src/IAX2FrameFull.cpp
   amp-core/src/IAX2Util.cpp
@@ -77,4 +78,15 @@ target_include_directories(hello-w32 PRIVATE src)
 target_include_directories(hello-w32 PRIVATE include)
 target_include_directories(hello-w32 PRIVATE kc1fsz-tools-cpp/include)
 target_link_options(hello-w32 PRIVATE -mwindows)
+
+# ----- hello-audio ----------------------------------------------------
+
+add_executable(hello-audio
+  src/tests/hello-audio-1.cpp
+)
+target_include_directories(hello-audio PRIVATE src)
+target_include_directories(hello-audio PRIVATE include)
+target_include_directories(hello-audio PRIVATE kc1fsz-tools-cpp/include)
+target_link_libraries(hello-audio -lws2_32 -lcurl -lwinmm)
+target_link_options(hello-audio PRIVATE -mwindows)
 
