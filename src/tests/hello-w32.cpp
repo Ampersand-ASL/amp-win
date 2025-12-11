@@ -1,12 +1,19 @@
+/*
+A demonstration of the basic capabilities of the Win32 API.
+Copyright (C) 2005, Bruce MacKinnon KC1FSZ
+*/
 #ifndef UNICODE
 #define UNICODE
 #endif 
 
 #include <windows.h>
+#include <iostream>
 
 #define IDC_STATIC_TEXT 1000
 #define IDC_EDIT_INPUT 1001
 #define IDC_BUTTON_0 1002
+
+using namespace std;
 
 static HBRUSH whiteBrush = NULL;
 
@@ -15,12 +22,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int nCmdShow) {
 
     // Register the window class.
-    const wchar_t CLASS_NAME[]  = L"Sample Window Class";
+    const wchar_t WINDOW_CLASS_NAME[]  = L"Sample Window Class";
     
     WNDCLASS wc = { };
     wc.lpfnWndProc   = WindowProc;
     wc.hInstance     = hInstance;
-    wc.lpszClassName = CLASS_NAME;
+    wc.lpszClassName = WINDOW_CLASS_NAME;
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW);
 
     RegisterClass(&wc);
@@ -29,7 +36,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int
 
     HWND hwnd = CreateWindowEx(
         0,                              // Optional window styles.
-        CLASS_NAME,                     // Window class
+        WINDOW_CLASS_NAME,                     // Window class
         L"Learn to Program Windows",    // Window text
         WS_OVERLAPPEDWINDOW,            // Window style
 
@@ -39,13 +46,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int
         NULL,       // Parent window    
         NULL,       // Menu
         hInstance,  // Instance handle
-        NULL        // Additional application data
+        // This data will be passed into the WM_CREATE event (see below)
+        (LPVOID)777
         );
-
-    if (hwnd == NULL)
-    {
+    if (hwnd == NULL) {
         return 0;
     }
+
+    // Demonstration: attach user data to window (like an object pointer)
+    SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)888);
 
     HWND hWndStatic = CreateWindowEx(
         0,                      // Optional window extended style
@@ -102,9 +111,19 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    // Pull out the user data for the window
+    auto ud = (unsigned long long)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+    cout << "Message for window " << ud << endl;
+
     switch (uMsg)
     {
-    case WM_CTLCOLORSTATIC:
+        case WM_CREATE:
+        {
+            const CREATESTRUCT* cs = (CREATESTRUCT*)lParam;
+            cout << "Got " << (unsigned long long)cs->lpCreateParams << endl;
+            return 0;
+        }
+        case WM_CTLCOLORSTATIC:
         {
             HDC hdcStatic = (HDC)wParam;
             // Set the text color (optional, e.g., black)
@@ -114,21 +133,21 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             // Return the handle to the background brush
             return (LRESULT)whiteBrush;
         }        
-    case WM_COMMAND: 
-        {
-            int controlID = LOWORD(wParam);
-            int messageType = HIWORD(wParam);
-            if (controlID == IDC_BUTTON_0 && messageType == BN_CLICKED) {
-                // Code to execute when the "Click Me" button is pressed
-                MessageBox(hwnd, TEXT("Button was clicked!"), TEXT("Notification"), MB_OK);
-            }
-            break;
-        }        
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        return 0;
+        case WM_COMMAND: 
+            {
+                int controlID = LOWORD(wParam);
+                int messageType = HIWORD(wParam);
+                if (controlID == IDC_BUTTON_0 && messageType == BN_CLICKED) {
+                    // Code to execute when the "Click Me" button is pressed
+                    MessageBox(hwnd, TEXT("Button was clicked!"), TEXT("Notification"), MB_OK);
+                }
+                break;
+            }        
+        case WM_DESTROY:
+            PostQuitMessage(0);
+            return 0;
 
-    case WM_PAINT:
+        case WM_PAINT:
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
@@ -136,10 +155,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             // All painting occurs here, between BeginPaint and EndPaint.
             FillRect(hdc, &ps.rcPaint, (HBRUSH) (COLOR_WINDOW+1));
             EndPaint(hwnd, &ps);
+            return 0;
         }
-        return 0;
     }
-
+    // By default
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
