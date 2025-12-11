@@ -16,6 +16,9 @@
  */
 #pragma once
 
+#include <winsock2.h>
+//#include <Windows.h>
+
 #include "LineRadio.h"
 
 namespace kc1fsz {
@@ -37,6 +40,30 @@ public:
     virtual void audioRateTick();
 
 private:
+
+    void _play(const Message& msg);
+    void _progressPlay();
+    void _checkTimeouts();
+
+    bool _playing = false;
+    // ### TODO: MOVE UP TO BASE
+    uint32_t _lastPlayedFrameMs = 0;
+    // If we go silent for this amount of time the playback is assumed
+    // to have ended. 
+    uint32_t _playSilenceIntervalMs = 20 * 4;
+
+    // Circular buffer
+    bool _isPlaying = false;
+    unsigned _nextQueuePtr = 0;
+    unsigned _nextPlayPtr = 0;
+    unsigned _currentPlayPtr = 0;
+
+    static const unsigned _queueSize = 32;
+    int16_t _waveData[_queueSize][BLOCK_SIZE_48K];
+    WAVEHDR _waveHdr[_queueSize];
+
+    HANDLE _event;
+    HWAVEOUT _waveOut;
 
 };
 

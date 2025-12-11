@@ -2,8 +2,11 @@
 
 #include <process.h>
 
+#include <curl/curl.h>
+
 #include "MainWindow.h"
 #include "amp-thread.h"
+#include "service-thread.h"
 
 using namespace std;
 using namespace kc1fsz;
@@ -34,8 +37,17 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int
         return -1;
     }
 
+    // Get libcurl going
+    CURLcode res = curl_global_init(CURL_GLOBAL_ALL);
+    if (res) {
+        printf("Libcurl failed\n");
+        return -1;
+    }
+      
     // Get the AMP thread running
     _beginthread(amp_thread, 0, (void*)777);
+    // Get the Service thread running
+    _beginthread(service_thread, 0, 0);
 
     MainWindow w(hInstance, "61057");
     w.show(nCmdShow);

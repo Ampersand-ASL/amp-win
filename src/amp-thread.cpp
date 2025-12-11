@@ -26,9 +26,8 @@
 //#include "sound-map.h"
 
 #include "LineIAX2.h"
-//#include "LineUsb.h"
+#include "LineRadioWin.h"
 #include "MessageBus.h"
-#include "RegisterTask.h"
 //#include "StatsTask.h"
 //#include "ManagerTask.h"
 #include "EventLoop.h"
@@ -140,17 +139,6 @@ void amp_thread(void* ud) {
     log.info("Start %ld", (unsigned long long)ud);
     StdClock clock;
 
-    // Get libcurl going
-    CURLcode res = curl_global_init(CURL_GLOBAL_ALL);
-    if (res) {
-        log.error("Libcurl failed");
-        return;
-    }
-    
-    RegisterTask registerTask(log, clock);
-    registerTask.configure(getenv("AMP_ASL_REG_URL"), getenv("AMP_NODE0_NUMBER"), 
-        getenv("AMP_NODE0_PASSWORD"), atoi(getenv("AMP_IAX_PORT")));
-  
     //StatsTask statsTask(log, clock);
     //statsTask.configure("http://stats.allstarlink.org/uhandler", getenv("AMP_NODE0_NUMBER"));
 
@@ -175,14 +163,14 @@ void amp_thread(void* ud) {
 
     log.info("USB %s mapped to %s, %s", getenv("AMP_NODE0_USBSOUND"),
         hidDeviceName, alsaDeviceName);
-
-    LineUsb radio0(log, clock, adaptor1, 2, 1, 3, Message::BROADCAST);
-    int rc = radio0.open(alsaDeviceName, hidDeviceName);
-    if (rc < 0) {
-        log.error("%d", rc);
-        return -1;
-    }
     */
+
+    LineRadioWin radio0(log, clock, adaptor1, 2, 1, 3, Message::BROADCAST);
+    int rc = radio0.open("","");
+    if (rc < 0) {
+        log.error("Failed to open radio connection %d", rc);
+        return;
+    }
 
     CallValidatorStd val;
     LocalRegistryStd locReg;
@@ -194,8 +182,8 @@ void amp_thread(void* ud) {
     // Routes
     mb0.adIn = &adaptor0;
     mb0.adOut = &adaptor1;
-    //adaptor0.setSink([&radio0](const Message& msg) { radio0.consume(msg); });
-    //adaptor1.setSink([&iax2Channel0](const Message& msg) { iax2Channel0.consume(msg); });
+    adaptor0.setSink([&radio0](const Message& msg) { radio0.consume(msg); });
+    adaptor1.setSink([&iax2Channel0](const Message& msg) { iax2Channel0.consume(msg); });
 
     // The listening node
     iax2Channel0.open(AF_INET, atoi(getenv("AMP_IAX_PORT")), "radio");
@@ -205,11 +193,10 @@ void amp_thread(void* ud) {
     //mgrTask.setCommandSink(&mgrSink);
 
     // Main loop        
-    //Runnable2* tasks2[16] = { &radio0, &iax2Channel0, &registerTask, &statsTask, &mgrTask };
     const unsigned task2Count = 3;
-    Runnable2* tasks2[task2Count] = { &iax2Channel0, &registerTask, &watcher0 };
+    Runnable2* tasks2[task2Count] = { &radio0, &iax2Channel0, &watcher0 };
 
-    EventLoop::run(log, clock, 0, 0, tasks2, task2Count);
+    EventLoop::run(log, clock, 0, 0, tasks2, task2Count, 0, true);
 
     iax2Channel0.close();
     //radio0.close();

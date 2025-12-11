@@ -25,6 +25,7 @@ add_executable(main
   src/main.cpp
   src/MainWindow.cpp
   src/amp-thread.cpp
+  src/service-thread.cpp
   src/LineRadioWin.cpp
   amp-core/src/EventLoop.cpp
   amp-core/src/Message.cpp
@@ -66,7 +67,7 @@ target_include_directories(main PRIVATE cmsis-dsp-mock/include)
 target_include_directories(main PRIVATE amp-core/src)
 target_include_directories(main PRIVATE amp-core/include)
 #target_include_directories(main PRIVATE sound-map/include)
-target_link_libraries(main -lws2_32 -lcurl)
+target_link_libraries(main -lws2_32 -lcurl -lwinmm)
 target_link_options(main PRIVATE -mwindows)
 
 # ----- hello-w32 ----------------------------------------------------
