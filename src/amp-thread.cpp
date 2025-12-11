@@ -114,7 +114,10 @@ public:
     virtual bool run2() {
         Request req;
         if (MsgQueue.try_pop(req)) {
-            _line.call(req.localNodeNumber.c_str(), req.targetNodeNumber.c_str());
+            if (req.cmd == "connect")
+                _line.call(req.localNodeNumber.c_str(), req.targetNodeNumber.c_str());
+            else if (req.cmd == "disconnectall")
+                _line.disconnectAllNonPermanent();
             return true;
         }
         else {

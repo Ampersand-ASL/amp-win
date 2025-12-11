@@ -60,6 +60,7 @@ private:
 };
 
 struct Request {
+    std::string cmd;
     std::string localNodeNumber;
     std::string targetNodeNumber;
 };

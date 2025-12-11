@@ -24,6 +24,7 @@
 #define IDC_STATIC_TEXT 1000
 #define IDC_EDIT_INPUT 1001
 #define IDC_BUTTON_CONNECT 1002
+#define IDC_BUTTON_DISCONNECTALL 1003
 
 using namespace std;
 
@@ -43,8 +44,10 @@ void MainWindow::reg(HINSTANCE hInstance) {
     RegisterClass(&wc);
 }
 
-MainWindow::MainWindow(HINSTANCE hInstance, const char* localNodeNumber)
-:   _localNodeNumber(localNodeNumber) {
+MainWindow::MainWindow(HINSTANCE hInstance, const char* localNodeNumber,
+    ThreadSafeQueue<Request>& q)
+:   _localNodeNumber(localNodeNumber),
+    _msgQueue(q) {
 
     _whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
 
@@ -69,7 +72,7 @@ MainWindow::MainWindow(HINSTANCE hInstance, const char* localNodeNumber)
         );
     SetWindowLongPtr(_hwnd, GWLP_USERDATA, (LONG_PTR)this);   
 
-    HWND hWndStatic = CreateWindowEx(
+    CreateWindowEx(
         0,                      // Optional window extended style
         L"STATIC",              // The predefined static control class name
         L"ASL Ampersand - KC1FSZ bruce@mackinnon.com",    // The text to display
@@ -95,7 +98,7 @@ MainWindow::MainWindow(HINSTANCE hInstance, const char* localNodeNumber)
         NULL              // Additional data
     );
 
-    HWND hwndButton = CreateWindow(
+    CreateWindow(
         TEXT("button"),   // Predefined class name
         TEXT("Connect"), // Button text
         WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, // Styles
@@ -103,6 +106,18 @@ MainWindow::MainWindow(HINSTANCE hInstance, const char* localNodeNumber)
         80, 25,           // Width, Height
         _hwnd,             // Parent window handle
         (HMENU)IDC_BUTTON_CONNECT,      // Button's unique identifier (ID)
+        hInstance,        // Application instance handle
+        NULL              // Additional app data
+    );
+
+    CreateWindow(
+        TEXT("button"),   // Predefined class name
+        TEXT("Disconnect All"), // Button text
+        WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, // Styles
+        280, 40,           // X, Y position
+        150, 25,           // Width, Height
+        _hwnd,             // Parent window handle
+        (HMENU)IDC_BUTTON_DISCONNECTALL,      // Button's unique identifier (ID)
         hInstance,        // Application instance handle
         NULL              // Additional app data
     );
@@ -145,15 +160,16 @@ LRESULT MainWindow::_msg(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
             int controlID = LOWORD(wParam);
             int messageType = HIWORD(wParam);
             if (controlID == IDC_BUTTON_CONNECT && messageType == BN_CLICKED) {
-                cout << getEditText(_hEditNode) << endl;
-                // Code to execute when the "Click Me" button is pressed
-                //MessageBox(hwnd, TEXT("Button was clicked!"), TEXT("Notification"), MB_OK);
-
-                // #### TODO CLEAN UP
                 Request req;
+                req.cmd = "connect";
                 req.localNodeNumber = _localNodeNumber;
                 req.targetNodeNumber = getEditText(_hEditNode);
-                MsgQueue.push(req);
+                _msgQueue.push(req);
+            }
+            else if (controlID == IDC_BUTTON_DISCONNECTALL && messageType == BN_CLICKED) {
+                Request req;
+                req.cmd = "disconnectall";
+                _msgQueue.push(req);
             }
             break;
         }        

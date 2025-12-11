@@ -49,7 +49,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int
     // Get the Service thread running
     _beginthread(service_thread, 0, 0);
 
-    MainWindow w(hInstance, "61057");
+    MainWindow w(hInstance, "61057", MsgQueue);
     w.show(nCmdShow);
 
     // Run the message loop.

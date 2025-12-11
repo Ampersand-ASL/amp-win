@@ -23,6 +23,8 @@
 #include <string>
 #include <windows.h>
 
+#include "amp-thread.h"
+
 namespace kc1fsz {
 
 class MainWindowEvents {
@@ -36,7 +38,8 @@ public:
 
     static void reg(HINSTANCE hInstance);
 
-    MainWindow(HINSTANCE hInstance, const char* localNodeNumber);
+    MainWindow(HINSTANCE hInstance, const char* localNodeNumber,
+        ThreadSafeQueue<Request>& msgQueue);
     ~MainWindow();
     void show(int nCmdShow);
 
@@ -49,6 +52,7 @@ private:
     HWND _hEditNode;
     HBRUSH _whiteBrush;
     std::string _localNodeNumber;
+    ThreadSafeQueue<Request>& _msgQueue;
 };
 
 }
