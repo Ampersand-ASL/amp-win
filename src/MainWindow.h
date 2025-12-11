@@ -20,9 +20,16 @@
 #define UNICODE
 #endif 
 
+#include <string>
 #include <windows.h>
 
 namespace kc1fsz {
+
+class MainWindowEvents {
+public:
+    virtual void connect(const std::string& nodeNumber) = 0;
+    virtual void disconnectAll() = 0;
+};
 
 class MainWindow {
 public:
