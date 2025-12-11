@@ -21,8 +21,9 @@ project(amp-win C CXX ASM)
 
 add_compile_options(-fstack-protector-all -Wall -Wpedantic)
 
-#add_executable(main
-# src/main.cpp
+add_executable(main
+  src/main.cpp
+  src/MainWindow.cpp
 #  src/EventLoop.cpp
 #  src/Message.cpp
 #  src/Line.cpp
@@ -53,16 +54,17 @@ add_compile_options(-fstack-protector-all -Wall -Wpedantic)
 #  amp-server/sw/src/Resampler.cpp
 #  cmsis-dsp-mock/src/main.cpp
 #  sound-map/src/sound-map.c
-#)
-#
-#target_include_directories(main PRIVATE src)
-#target_include_directories(main PRIVATE include)
-#target_include_directories(main PRIVATE kc1fsz-tools-cpp/include)
+)
+
+target_include_directories(main PRIVATE src)
+target_include_directories(main PRIVATE include)
+target_include_directories(main PRIVATE kc1fsz-tools-cpp/include)
 #target_include_directories(main PRIVATE itu-g711-codec/src)
 #target_include_directories(main PRIVATE cmsis-dsp-mock/include)
 #target_include_directories(main PRIVATE amp-server/sw/include)
 #target_include_directories(main PRIVATE sound-map/include)
 #target_link_libraries(main -lasound -lcurl -lusb-1.0)
+target_link_options(main PRIVATE -mwindows)
 
 # ----- hello-w32 ----------------------------------------------------
 
