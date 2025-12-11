@@ -15,17 +15,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include <iostream>
+#include <string>
+#include <vector>
+
 #include "MainWindow.h"
 
 #define IDC_STATIC_TEXT 1000
 #define IDC_EDIT_INPUT 1001
-#define IDC_BUTTON_0 1002
+#define IDC_BUTTON_CONNECT 1002
 
 using namespace std;
 
 using namespace std;
 
 namespace kc1fsz {
+
+string getEditText(HWND hWndEdit);
 
 static const wchar_t WINDOW_CLASS_NAME[] = L"MainWindow";    
 
@@ -37,18 +42,23 @@ void MainWindow::reg(HINSTANCE hInstance) {
     RegisterClass(&wc);
 }
 
-MainWindow::MainWindow(HINSTANCE hInstance) {
+MainWindow::MainWindow(HINSTANCE hInstance, const char* nodeName) {
 
     _whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
+
+    wchar_t nodeNameW[32];
+    MultiByteToWideChar(CP_UTF8, 0, nodeName, -1, nodeNameW, 32);
+    wchar_t label[64];
+    _snwprintf_s(label, 64, L"ASL Ampersand (Node: %s)", nodeNameW);
 
     _hwnd = CreateWindowEx(
         0,                              // Optional window styles.
         WINDOW_CLASS_NAME,                     // Window class
-        L"Learn to Program Windows",    // Window text
+        label,
         WS_OVERLAPPEDWINDOW,            // Window style
 
         // Size and position
-        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+        400, 300, CW_USEDEFAULT, CW_USEDEFAULT,
 
         NULL,       // Parent window    
         NULL,       // Menu
@@ -60,23 +70,23 @@ MainWindow::MainWindow(HINSTANCE hInstance) {
     HWND hWndStatic = CreateWindowEx(
         0,                      // Optional window extended style
         L"STATIC",              // The predefined static control class name
-        L"Some static text",    // The text to display
+        L"ASL Ampersand - KC1FSZ bruce@mackinnon.com",    // The text to display
         WS_CHILD | WS_VISIBLE | SS_LEFT, // Styles (child, visible, left-aligned)
         10, 10,                 // X, Y position
-        200, 20,                // Width, Height
+        400, 20,                // Width, Height
         _hwnd,                   // Handle to the parent window
         (HMENU)IDC_STATIC_TEXT, // Child window identifier (ID)
         hInstance,              // Handle to the application instance
         NULL                    // Pointer to window creation data
     );
 
-    HWND hEdit = CreateWindowEx(
+    _hEditNode = CreateWindowEx(
         WS_EX_CLIENTEDGE, // Extended styles, gives a sunken border look
         L"EDIT",           // Predefined window class name for edit controls (L for Unicode)
-        L"Enter text here", // Initial text (can be NULL or empty string L"")
+        NULL,               // Initial text (can be NULL or empty string L"")
         WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL, // Window styles
-        10, 50,           // X, Y position
-        200, 25,          // Width, Height
+        10, 40,           // X, Y position
+        150, 25,          // Width, Height
         _hwnd,             // Parent window handle
         (HMENU)IDC_EDIT_INPUT, // Control ID (cast to HMENU)
         hInstance, // Instance handle
@@ -85,12 +95,12 @@ MainWindow::MainWindow(HINSTANCE hInstance) {
 
     HWND hwndButton = CreateWindow(
         TEXT("button"),   // Predefined class name
-        TEXT("Click Me"), // Button text
+        TEXT("Connect"), // Button text
         WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, // Styles
-        10, 100,           // X, Y position
+        180, 40,           // X, Y position
         80, 25,           // Width, Height
         _hwnd,             // Parent window handle
-        (HMENU)IDC_BUTTON_0,      // Button's unique identifier (ID)
+        (HMENU)IDC_BUTTON_CONNECT,      // Button's unique identifier (ID)
         hInstance,        // Application instance handle
         NULL              // Additional app data
     );
@@ -115,8 +125,7 @@ LRESULT MainWindow::_msg(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     {
         case WM_CREATE:
         {
-            const CREATESTRUCT* cs = (CREATESTRUCT*)lParam;
-            cout << "Got " << (unsigned long long)cs->lpCreateParams << endl;
+            //const CREATESTRUCT* cs = (CREATESTRUCT*)lParam;
             return 0;
         }
         case WM_CTLCOLORSTATIC:
@@ -133,7 +142,8 @@ LRESULT MainWindow::_msg(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         {
             int controlID = LOWORD(wParam);
             int messageType = HIWORD(wParam);
-            if (controlID == IDC_BUTTON_0 && messageType == BN_CLICKED) {
+            if (controlID == IDC_BUTTON_CONNECT && messageType == BN_CLICKED) {
+                cout << getEditText(_hEditNode) << endl;
                 // Code to execute when the "Click Me" button is pressed
                 MessageBox(hwnd, TEXT("Button was clicked!"), TEXT("Notification"), MB_OK);
             }
@@ -157,6 +167,33 @@ LRESULT MainWindow::_msg(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     }
     // By default
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+/**
+ * @returns The contents of a text box in normal encoding.
+ */
+string getEditText(HWND hWndEdit) {
+
+    // 1. Determine text length
+    int length = GetWindowTextLength(hWndEdit);
+    if (length == 0) {
+        cout << "Edit control is empty or an error occurred." << endl;
+        return string();
+    }
+    // 2. Allocate buffer (use std::vector for robust memory management)
+    // Add 1 for the null terminator
+    std::vector<TCHAR> buffer(length + 1); 
+    // 3. Retrieve the text
+    // The third argument is the maximum number of characters to copy, including the null terminator.
+    GetWindowText(hWndEdit, buffer.data(), length + 1); 
+    // Convert to normal
+    char contents[64];
+    contents[0] = 0;
+    int wSize = WideCharToMultiByte(CP_ACP, 0, buffer.data(), -1, NULL, 0, NULL, NULL);
+    if (wSize > 0) {
+        WideCharToMultiByte(CP_ACP, 0, buffer.data(), -1, contents, 64, NULL, NULL);
+    }
+    return string(contents);
 }
 
 }

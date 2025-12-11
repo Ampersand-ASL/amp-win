@@ -29,7 +29,7 @@ public:
 
     static void reg(HINSTANCE hInstance);
 
-    MainWindow(HINSTANCE hInstance);
+    MainWindow(HINSTANCE hInstance, const char* nodeName);
     ~MainWindow();
     void show(int nCmdShow);
 
@@ -39,6 +39,7 @@ private:
     LRESULT _msg(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
     HWND _hwnd;
+    HWND _hEditNode;
     HBRUSH _whiteBrush;
 };
 

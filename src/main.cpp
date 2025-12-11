@@ -6,11 +6,9 @@ using namespace kc1fsz;
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int nCmdShow) {
 
-    cout << "hello izzy" << endl;
-
     MainWindow::reg(hInstance);
 
-    MainWindow w(hInstance);
+    MainWindow w(hInstance, "61057");
     w.show(nCmdShow);
 
     // Run the message loop.
