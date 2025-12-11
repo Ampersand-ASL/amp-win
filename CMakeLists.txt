@@ -24,6 +24,7 @@ add_compile_options(-fstack-protector-all -Wall -Wpedantic)
 add_executable(main
   src/main.cpp
   src/MainWindow.cpp
+  src/amp-thread.cpp
   amp-core/src/EventLoop.cpp
   amp-core/src/Message.cpp
   amp-core/src/Line.cpp
@@ -32,7 +33,7 @@ add_executable(main
   amp-core/src/IAX2FrameFull.cpp
   amp-core/src/IAX2Util.cpp
   amp-core/src/MessageBus.cpp
-#  amp-core/src/RegisterTask.cpp
+  amp-core/src/RegisterTask.cpp
 #  amp-core/src/StatsTask.cpp
 #  amp-core/src/ManagerTask.cpp
   amp-core/src/RetransmissionBufferStd.cpp
@@ -48,7 +49,7 @@ add_executable(main
   kc1fsz-tools-cpp/src/DTMFDetector2.cpp
   kc1fsz-tools-cpp/src/MicroDNS.cpp
   kc1fsz-tools-cpp/src/StdPollTimer.cpp
-#  kc1fsz-tools-cpp/src/linux/StdClock.cpp
+  kc1fsz-tools-cpp/src/linux/StdClock.cpp
   kc1fsz-tools-cpp/src/md5/md5c.c
   itu-g711-codec/src/codec.cpp
   itu-g711-codec/src/Plc.cpp
@@ -64,8 +65,7 @@ target_include_directories(main PRIVATE cmsis-dsp-mock/include)
 target_include_directories(main PRIVATE amp-core/src)
 target_include_directories(main PRIVATE amp-core/include)
 #target_include_directories(main PRIVATE sound-map/include)
-#target_link_libraries(main -lcurl)
-target_link_libraries(main -lws2_32)
+target_link_libraries(main -lws2_32 -lcurl)
 target_link_options(main PRIVATE -mwindows)
 
 # ----- hello-w32 ----------------------------------------------------
