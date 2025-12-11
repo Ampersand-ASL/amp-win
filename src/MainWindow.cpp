@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "MainWindow.h"
+#include "amp-thread.h"
 
 #define IDC_STATIC_TEXT 1000
 #define IDC_EDIT_INPUT 1001
@@ -42,12 +43,13 @@ void MainWindow::reg(HINSTANCE hInstance) {
     RegisterClass(&wc);
 }
 
-MainWindow::MainWindow(HINSTANCE hInstance, const char* nodeName) {
+MainWindow::MainWindow(HINSTANCE hInstance, const char* localNodeNumber)
+:   _localNodeNumber(localNodeNumber) {
 
     _whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
 
     wchar_t nodeNameW[32];
-    MultiByteToWideChar(CP_UTF8, 0, nodeName, -1, nodeNameW, 32);
+    MultiByteToWideChar(CP_UTF8, 0, localNodeNumber, -1, nodeNameW, 32);
     wchar_t label[64];
     _snwprintf_s(label, 64, L"ASL Ampersand (Node: %s)", nodeNameW);
 
@@ -145,7 +147,13 @@ LRESULT MainWindow::_msg(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
             if (controlID == IDC_BUTTON_CONNECT && messageType == BN_CLICKED) {
                 cout << getEditText(_hEditNode) << endl;
                 // Code to execute when the "Click Me" button is pressed
-                MessageBox(hwnd, TEXT("Button was clicked!"), TEXT("Notification"), MB_OK);
+                //MessageBox(hwnd, TEXT("Button was clicked!"), TEXT("Notification"), MB_OK);
+
+                // #### TODO CLEAN UP
+                Request req;
+                req.localNodeNumber = _localNodeNumber;
+                req.targetNodeNumber = getEditText(_hEditNode);
+                MsgQueue.push(req);
             }
             break;
         }        

@@ -105,6 +105,29 @@ public:
     AdaptorOut* adOut = 0;
 };
 
+ThreadSafeQueue<Request> MsgQueue;
+
+class QueueWatcher : public Runnable2 {
+public: 
+
+    QueueWatcher(LineIAX2& line) : _line(line) { }
+
+    virtual bool run2() {
+        Request req;
+        if (MsgQueue.try_pop(req)) {
+            _line.call(req.localNodeNumber.c_str(), req.targetNodeNumber.c_str());
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+private:
+
+    LineIAX2& _line;
+};
+
 /*
 Topology:
 
@@ -164,11 +187,13 @@ void amp_thread(void* ud) {
     CallValidatorStd val;
     LocalRegistryStd locReg;
     LineIAX2 iax2Channel0(log, clock, 1, mb0, &val, &locReg);
-    iax2Channel0.setTrace(true);
+    //iax2Channel0.setTrace(true);
+
+    QueueWatcher watcher0(iax2Channel0);
 
     // Routes
-    //mb0.adIn = &adaptor0;
-    //mb0.adOut = &adaptor1;
+    mb0.adIn = &adaptor0;
+    mb0.adOut = &adaptor1;
     //adaptor0.setSink([&radio0](const Message& msg) { radio0.consume(msg); });
     //adaptor1.setSink([&iax2Channel0](const Message& msg) { iax2Channel0.consume(msg); });
 
@@ -181,8 +206,8 @@ void amp_thread(void* ud) {
 
     // Main loop        
     //Runnable2* tasks2[16] = { &radio0, &iax2Channel0, &registerTask, &statsTask, &mgrTask };
-    const unsigned task2Count = 2;
-    Runnable2* tasks2[task2Count] = { &iax2Channel0, &registerTask };
+    const unsigned task2Count = 3;
+    Runnable2* tasks2[task2Count] = { &iax2Channel0, &registerTask, &watcher0 };
 
     EventLoop::run(log, clock, 0, 0, tasks2, task2Count);
 

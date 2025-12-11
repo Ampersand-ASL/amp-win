@@ -36,7 +36,7 @@ public:
 
     static void reg(HINSTANCE hInstance);
 
-    MainWindow(HINSTANCE hInstance, const char* nodeName);
+    MainWindow(HINSTANCE hInstance, const char* localNodeNumber);
     ~MainWindow();
     void show(int nCmdShow);
 
@@ -48,6 +48,7 @@ private:
     HWND _hwnd;
     HWND _hEditNode;
     HBRUSH _whiteBrush;
+    std::string _localNodeNumber;
 };
 
 }
