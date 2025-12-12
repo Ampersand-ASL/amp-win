@@ -15,10 +15,12 @@
 using namespace std;
 using namespace kc1fsz;
 
+// Adapted from:
 // https://gist.github.com/kevinmoran/2e673695058c7bc32fb5172848900db5
+// (I see no copyright message on this file)
 
-int main()
-{
+int main(int, const char**) {
+
     StdClock clock;
 
     HRESULT hr = CoInitializeEx(nullptr, COINIT_SPEED_OVER_MEMORY);
@@ -40,13 +42,10 @@ int main()
 
     audioDevice->Release();
     
-    // WAVEFORMATEX* defaultMixFormat = NULL;
-    // hr = audioClient->GetMixFormat(&defaultMixFormat);
-    // assert(hr == S_OK);
-
     WAVEFORMATEX mixFormat = {};
     mixFormat.wFormatTag = WAVE_FORMAT_PCM;
-    mixFormat.nChannels = 2;
+    //mixFormat.nChannels = 2;
+    mixFormat.nChannels = 1;
     mixFormat.nSamplesPerSec = 48000;
     mixFormat.wBitsPerSample = 16;
     mixFormat.nBlockAlign = (mixFormat.nChannels * mixFormat.wBitsPerSample) / 8;
@@ -58,8 +57,6 @@ int main()
     const int64_t REFTIMES_PER_SEC = 5000000; // hundred nanoseconds
     REFERENCE_TIME requestedSoundBufferDuration = REFTIMES_PER_SEC;
 
-
-    // 
     DWORD initStreamFlags = ( AUDCLNT_STREAMFLAGS_RATEADJUST 
                             | AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM
                             | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY );
@@ -101,6 +98,7 @@ int main()
     double playbackTime = 0.0;
     const float TONE_HZ = 440;
     const int16_t TONE_VOLUME = 3000;
+    // How long the tone should play
     unsigned targetSamples = 4 * mixFormat.nSamplesPerSec;
     unsigned samples = 0;
    
@@ -135,7 +133,7 @@ int main()
             int16_t y = (int16_t)(TONE_VOLUME * amplitude);
 
             *buffer++ = y; // left
-            *buffer++ = y; // right
+            //*buffer++ = y; // right
 
             playbackTime += 1.f / mixFormat.nSamplesPerSec;
             samples++;
@@ -163,7 +161,7 @@ int main()
     long dur = endTime - startTime;
     cout << "Dur " << dur << endl; 
 
-    // Drain
+    // Drain the audio buffer so that we hear the whole thing
     while (true) {
         UINT32 bufferPadding;
         hr = audioClient->GetCurrentPadding(&bufferPadding);
