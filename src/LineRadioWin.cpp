@@ -61,7 +61,45 @@ void LineRadioWin::setCos(bool cos) {
 }
 
 bool LineRadioWin::run2() {
-    return false;
+
+    // Deal with audio coming in 
+    PCM16Frame frame;
+    if (_captureQueue.try_pop(frame)) {
+
+        assert(frame.size() == BLOCK_SIZE_48K);
+
+        uint64_t now = _clock.timeUs();
+        if (_captureCount == 0)
+            _captureStartUs = now;
+        uint64_t idealNow = _captureStartUs + (_captureCount * BLOCK_PERIOD_MS * 1000);
+        _captureCount++;
+
+        // Transition detect, the beginning of a capture "run"
+        if (!_capturing) {
+            _capturing = true;
+            // Force a synchronization of the actual system clock and 
+            // the timestamps that will be put on the generated frames.
+            _captureStartUs = now;
+            _captureCount = 0;
+            idealNow = now;
+            _captureStart();
+        }
+
+        _lastCapturedFrameMs = _clock.time();
+
+        // Here is where statistics and possibly recording happens
+        _analyzeCapturedAudio(frame.data(), BLOCK_SIZE_48K);
+
+        // Here is where the actual processing of the new block happens
+        _processCapturedAudio(frame.data(), BLOCK_SIZE_48K, now, idealNow);
+
+        _log.info("Captured frame");
+
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 void LineRadioWin::audioRateTick() {
@@ -110,13 +148,11 @@ void LineRadioWin::_checkTimeouts() {
         _log.info("Play End");
         _playEnd();
     }
-    /*
     if (_capturing &&
         _clock.isPast(_lastCapturedFrameMs + _captureSilenceIntervalMs)) {
         _capturing = false;
         _captureEnd();
     }
-    */
 }
 
 void LineRadioWin::oneSecTick() {
@@ -214,8 +250,12 @@ unsigned LineRadioWin::_audioThread() {
     UINT32 playBufferSize;
     hr = playAudioClient->GetBufferSize(&playBufferSize);
     assert(hr == S_OK);
+    _log.info("Play buffer size %lld (ms) %u (samples)", bufferSizeMs, playBufferSize);
 
-    _log.info("Play buffer size %lld (ms) %u (samples) %u", bufferSizeMs, playBufferSize);
+    UINT32 captureBufferSize;
+    hr = captureAudioClient->GetBufferSize(&captureBufferSize);
+    assert(hr == S_OK);
+    _log.info("Capture buffer size %u (samples)", captureBufferSize);
 
     hr = playAudioClient->Start();
     assert(hr == S_OK);
@@ -282,6 +322,44 @@ unsigned LineRadioWin::_audioThread() {
                 UINT64 audioPlaybackPosInSeconds = audioPlaybackPos/audioPlaybackFreq;
                 UINT64 audioPlaybackPosInSamples = audioPlaybackPosInSeconds*mixFormat.nSamplesPerSec;
                 */
+            }
+        }
+
+        // ----- Capture ------------------------------------------------------
+        //
+        // NOTE: Most of this work happens regardless of whether the COS 
+        // signal is active. We do this to keep all of the audio capture buffers
+        // clear. But most of the time the audio is just discarded, or possibly
+        // just used for CTCSS/squelch detection.
+       
+        {
+            UINT32 nFrames;
+            DWORD flags;
+            BYTE* captureBuffer;
+
+            hr = captureClient->GetBuffer(&captureBuffer, &nFrames, &flags, NULL, NULL);
+            assert(SUCCEEDED(hr));
+
+            //_log.info("Capture frames %d", nFrames);
+
+            // #### TODO: NEED TO ENFORCE MAX_BUFFER_SIZE
+            // Pull the information out of the hardware
+            for (unsigned i = 0; i < nFrames; i++)
+                _captureBuffer[_captureBufferSize++] = captureBuffer[i];
+
+            hr = captureClient->ReleaseBuffer(nFrames);
+            assert(SUCCEEDED(hr));
+
+            // Send as many frames back if possible
+            while (_captureBufferSize > BLOCK_SIZE_48K) {
+                // #### TODO: THREAD SAFETY
+                // #### TODO: MORE SOPHSITICATED COS
+                // Send the oldest complete block of audio IF THE COS IS ENABLED
+                if (_cos) 
+                    _captureQueue.push(PCM16Frame(_captureBuffer, BLOCK_SIZE_48K));
+                // Shift left - overlapping move
+                ::memmove(_captureBuffer, _captureBuffer + _captureBufferSize, BLOCK_SIZE_48K);
+                _captureBufferSize -= BLOCK_SIZE_48K;
             }
         }
     }

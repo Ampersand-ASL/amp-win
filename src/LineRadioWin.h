@@ -56,6 +56,12 @@ private:
 
     HANDLE _threadH = 0;
     bool _run = false;
+    uint64_t _captureStartUs = 0;
+    uint32_t _captureCount = 0;
+    bool _capturing = false;
+    uint32_t _lastCapturedFrameMs = 0;
+    // If we go silent for this amount of time the capture is assumed to have ended. 
+    uint32_t _captureSilenceIntervalMs = 20 * 4;
 
     bool _playing = false;
     // ### TODO: MOVE UP TO BASE
@@ -68,6 +74,11 @@ private:
 
     // #### TODO: MAKE THIS THREAD SAFE
     volatile bool _cos = false;
+    // This queue passes capture audio out of the audio thread
+    threadsafequeue<PCM16Frame> _captureQueue;
+    static const unsigned MAX_CAPTURE_BUFFER_SIZE = BLOCK_SIZE_48K * 4;
+    int16_t _captureBuffer[MAX_CAPTURE_BUFFER_SIZE];
+    unsigned _captureBufferSize = 0;
 };
 
 }
