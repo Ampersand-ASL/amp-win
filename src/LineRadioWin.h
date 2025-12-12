@@ -38,11 +38,14 @@ public:
 
     virtual bool run2();
     virtual void audioRateTick();
+    virtual void oneSecTick();
 
 private:
 
+    uint32_t _maxTime = 0;
+
     void _play(const Message& msg);
-    void _progressPlay();
+    bool _progressPlay();
     void _checkTimeouts();
 
     bool _playing = false;
@@ -57,12 +60,12 @@ private:
     unsigned _nextQueuePtr = 0;
     unsigned _nextPlayPtr = 0;
     unsigned _currentPlayPtr = 0;
+    unsigned _spurtCount = 0;
 
     static const unsigned _queueSize = 32;
     int16_t _waveData[_queueSize][BLOCK_SIZE_48K];
     WAVEHDR _waveHdr[_queueSize];
 
-    HANDLE _event;
     HWAVEOUT _waveOut;
 
 };

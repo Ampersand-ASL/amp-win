@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#include <iostream>
 #include <cassert>
 
 #include "kc1fsz-tools/Log.h"
@@ -21,6 +22,8 @@
 #include "Message.h"
 #include "LineRadioWin.h"
 #include "Transcoder_SLIN_48K.h"
+
+using namespace std;
 
 namespace kc1fsz {
 
@@ -38,22 +41,9 @@ LineRadioWin::LineRadioWin(Log& log, Clock& clock, MessageConsumer& consumer,
     pFormat.wBitsPerSample = 16;
     pFormat.cbSize = 0;
 
-    // Create an event that will be fired by the Wave system when it is 
-    // ready to receive some more data.
-    _event = CreateEvent( 
-        NULL,               // default security attributes
-        FALSE,              // TRUE=manual-reset event, FALSE=auto-reset
-        FALSE,              // initial state is non-signaled
-        TEXT("Done")        // object name
-    ); 
-    if (_event == 0) {
-        _log.error("Event failed");
-        return;
-    }
-
     // Open the output channel - using the default output device (WAVE_MAPPER)
-    MMRESULT result = waveOutOpen(&_waveOut, WAVE_MAPPER, &pFormat, (DWORD_PTR)_event, 0L, 
-        (WAVE_FORMAT_DIRECT | CALLBACK_EVENT));
+    MMRESULT result = waveOutOpen(&_waveOut, WAVE_MAPPER, &pFormat, (DWORD_PTR)0, 0L, 
+        (WAVE_FORMAT_DIRECT | CALLBACK_NULL));
     if (result) {
         _log.error("Open failed");
         return;
@@ -73,6 +63,8 @@ LineRadioWin::LineRadioWin(Log& log, Clock& clock, MessageConsumer& consumer,
             return;
         }
     }
+
+     waveOutRestart(_waveOut);
 }
 
 int LineRadioWin::open(const char* deviceName, const char* hidName) {    
@@ -83,19 +75,17 @@ void LineRadioWin::close() {
 }
     
 bool LineRadioWin::run2() {
-    // Check the status of the event (and un-signal it atomically if it is set)
-    // Timeout is zero
-    DWORD r = ::WaitForSingleObject(_event, 0);
-    if (r == 0) {
-        _progressPlay();
-        return true;
-    }
-    return false;
+    return _progressPlay();
 }
 
-void LineRadioWin::_progressPlay() {
+bool LineRadioWin::_progressPlay() {
+
+    uint64_t startTime = _clock.timeUs();
+    bool didSomething = false;
+
     // Anything waiting?
     if (_nextQueuePtr != _nextPlayPtr) {
+        didSomething = true;
         // Start the new one
         MMRESULT result = waveOutWrite(_waveOut, 
             &(_waveHdr[_nextPlayPtr]), sizeof(WAVEHDR));
@@ -110,6 +100,19 @@ void LineRadioWin::_progressPlay() {
                 _nextPlayPtr = 0;
         }
     }
+
+    uint64_t endTime = _clock.timeUs();
+    uint64_t dur = endTime - startTime;
+
+    if (dur > 500) {
+        cout << "Dur " << dur << " " << _spurtCount << endl;
+    }
+
+    if (dur > _maxTime) {
+        _maxTime = dur;
+    }
+
+    return didSomething;
 }
 
 void LineRadioWin::audioRateTick() {
@@ -128,6 +131,7 @@ void LineRadioWin::_play(const Message& msg) {
     // Detect transitions from silence to playing
     if (!_playing) {
         _playStart();
+        _spurtCount = 0;
     }
 
     assert(msg.size() == BLOCK_SIZE_48K * 2);
@@ -150,6 +154,7 @@ void LineRadioWin::_play(const Message& msg) {
 
     _lastPlayedFrameMs = _clock.time();
     _playing = true;
+    _spurtCount++;
 }
 
 void LineRadioWin::_checkTimeouts() {
@@ -169,5 +174,11 @@ void LineRadioWin::_checkTimeouts() {
     }
     */
 }
+
+void LineRadioWin::oneSecTick() {
+    cout << "max  " << _maxTime << endl;
+    _maxTime = 0;
+}
+
 
 }

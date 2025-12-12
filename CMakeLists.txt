@@ -91,3 +91,14 @@ target_include_directories(hello-audio PRIVATE kc1fsz-tools-cpp/include)
 target_link_libraries(hello-audio -lws2_32 -lcurl -lwinmm)
 target_link_options(hello-audio PRIVATE -mwindows)
 
+# ----- hello-audio-2 ----------------------------------------------------
+
+add_executable(hello-audio-2
+  src/tests/hello-audio-2.cpp
+  kc1fsz-tools-cpp/src/linux/StdClock.cpp
+)
+target_include_directories(hello-audio-2 PRIVATE src)
+target_include_directories(hello-audio-2 PRIVATE include)
+target_include_directories(hello-audio-2 PRIVATE kc1fsz-tools-cpp/include)
+target_link_libraries(hello-audio-2 -lole32)
+target_link_options(hello-audio-2 PRIVATE -mwindows)

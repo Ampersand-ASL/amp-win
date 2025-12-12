@@ -191,10 +191,6 @@ void amp_thread(void* ud) {
     // The listening node
     iax2Channel0.open(AF_INET, atoi(getenv("AMP_IAX_PORT")), "radio");
     
-    //ManagerSink mgrSink(iax2Channel0);
-    //ManagerTask mgrTask(log, clock, atoi(getenv("AMP_NODE0_MGR_PORT")));
-    //mgrTask.setCommandSink(&mgrSink);
-
     // Main loop        
     const unsigned task2Count = 3;
     Runnable2* tasks2[task2Count] = { &radio0, &iax2Channel0, &watcher0 };

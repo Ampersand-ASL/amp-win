@@ -9,3 +9,7 @@ Setup MINGW Environment
         # not the most secure method.
         git config --global credential.helper store
 
+Sound
+-----
+
+https://medium.com/@shahidahmadkhan86/sound-in-windows-the-wasapi-in-c-23024cdac7c6
