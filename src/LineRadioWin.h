@@ -17,8 +17,10 @@
 #pragma once
 
 #include <winsock2.h>
-//#include <Windows.h>
 
+#include "kc1fsz-tools/threadsafequeue.h"
+
+#include "PCM16Frame.h"
 #include "LineRadio.h"
 
 namespace kc1fsz {
@@ -45,8 +47,14 @@ public:
 
 private:
 
+    static unsigned _audioThread(void*);
+    unsigned _audioThread();
+
     void _play(const Message& msg);
     void _checkTimeouts();
+
+    HANDLE _threadH = 0;
+    bool _run = false;
 
     bool _playing = false;
     // ### TODO: MOVE UP TO BASE
@@ -54,6 +62,8 @@ private:
     // If we go silent for this amount of time the playback is assumed
     // to have ended. 
     uint32_t _playSilenceIntervalMs = 20 * 4;
+    // This queue passes play audio out to the audio thread
+    threadsafequeue<PCM16Frame> _playQueue;
 };
 
 }

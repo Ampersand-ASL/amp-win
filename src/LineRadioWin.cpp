@@ -14,10 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-//#include <process.h>
+// NOTE: There are no sockets here, but we do this to avoid a compiler
+// warning: "Include winsock2 before windows.h"
+#include <winsock2.h>
+#include <mmdeviceapi.h>
+#include <audioclient.h>
 
 #include <iostream>
 #include <cassert>
+#include <cmath>
 
 #include "kc1fsz-tools/Log.h"
 
@@ -33,7 +38,14 @@ LineRadioWin::LineRadioWin(Log& log, Clock& clock, MessageConsumer& consumer,
     unsigned busId, unsigned callId, unsigned destBusId, unsigned destCallId)
 :   LineRadio(log, clock, consumer, busId, callId, destBusId, destCallId) {
     // Get the audio thread running
-    _beginthread(_audioThread, 0, (void*)this);
+    _run = true;
+    unsigned int threadID;
+    _threadH = (HANDLE)_beginthreadex(NULL, 0, _audioThread, (void*)this, 0, &threadID);
+}
+
+LineRadioWin::~LineRadioWin() {
+    _run = false;
+    WaitForSingleObject(_threadH, INFINITE);
 }
 
 int LineRadioWin::open(const char* deviceName, const char* hidName) {    
@@ -69,12 +81,17 @@ void LineRadioWin::_play(const Message& msg) {
     assert(msg.getFormat() == CODECType::IAX2_CODEC_SLIN_48K);
 
     // Convert the SLIN_48K LE into 16-bit PCM audio
+    int16_t pcm48k_2[BLOCK_SIZE_48K];
     Transcoder_SLIN_48K transcoder;
+    transcoder.decode(msg.raw(), msg.size(), pcm48k_2, BLOCK_SIZE_48K);
 
-    // #### TODO: STUFF A FRAME IF WE'RE COMING OUT OF SILENCE
+    // Here is where statistical analysis and/or local recording can take 
+    // place for diagnostic purposes.
+    _analyzePlayedAudio(pcm48k_2, BLOCK_SIZE_48K);
 
-    //transcoder.decode(msg.raw(), msg.size(), _waveData[_nextQueuePtr], BLOCK_SIZE_48K);
-    
+    // Pass the frame off to the worker thread
+    _playQueue.push(PCM16Frame(pcm48k_2, BLOCK_SIZE_48K));
+
     _lastPlayedFrameMs = _clock.time();
     _playing = true;
 }
@@ -100,8 +117,152 @@ void LineRadioWin::_checkTimeouts() {
 void LineRadioWin::oneSecTick() {
 }
 
-void _audioThread(void*);
-void _audioThread();
+unsigned LineRadioWin::_audioThread(void* o) {    
+    return ((LineRadioWin*)o)->_audioThread();
+}
 
+// #### TODO: CLEAN UP ASSERTS
+// #### TODO: MAKE IT SO WE CAN OPEN/CLOSE MULTIPLE TIMES (i.e. DEVICE CHANGE)
+
+unsigned LineRadioWin::_audioThread() {
+
+    _log.info("LineRadioWin thread start");
+
+    HRESULT hr;
+
+    IMMDeviceEnumerator* deviceEnumerator;
+    hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (LPVOID*)(&deviceEnumerator));
+    assert(hr == S_OK);
+
+    IMMDevice* audioDevice;
+    hr = deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &audioDevice);
+    assert(hr == S_OK);
+
+    deviceEnumerator->Release();
+
+    IAudioClient2* audioClient;
+    hr = audioDevice->Activate(__uuidof(IAudioClient2), CLSCTX_ALL, nullptr, (LPVOID*)(&audioClient));
+    assert(hr == S_OK);
+
+    audioDevice->Release();
+    
+    WAVEFORMATEX mixFormat = {};
+    mixFormat.wFormatTag = WAVE_FORMAT_PCM;
+    mixFormat.nChannels = 1;
+    mixFormat.nSamplesPerSec = 48000;
+    mixFormat.wBitsPerSample = 16;
+    mixFormat.nBlockAlign = (mixFormat.nChannels * mixFormat.wBitsPerSample) / 8;
+    mixFormat.nAvgBytesPerSec = mixFormat.nSamplesPerSec * mixFormat.nBlockAlign;
+
+    // This controls the size of the buffer, and also how long buffers get filled
+    // before audio can be heard.
+
+    // This is hundred nanoseconds
+    const int64_t REFTIMES_PER_SEC = 500000; 
+    const int64_t bufferSizeUs = REFTIMES_PER_SEC / 10;
+    const int64_t bufferSizeMs = bufferSizeUs / 1000;
+    REFERENCE_TIME requestedSoundBufferDuration = REFTIMES_PER_SEC;
+
+    DWORD initStreamFlags = ( AUDCLNT_STREAMFLAGS_RATEADJUST 
+                            | AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM
+                            | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY );
+
+    hr = audioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 
+                                 initStreamFlags, 
+    // The buffer capacity as a time value. This parameter is of type REFERENCE_TIME 
+    // and is expressed in 100-nanosecond units. This parameter contains the buffer 
+    // size that the caller requests for the buffer that the audio application will 
+    // share with the audio engine (in shared mode) or with the endpoint device (in 
+    // exclusive mode). 
+                                 requestedSoundBufferDuration, 
+                                 0, 
+                                 &mixFormat, 
+                                 nullptr);
+
+    assert(hr == S_OK);
+
+    IAudioRenderClient* audioRenderClient;
+    hr = audioClient->GetService(__uuidof(IAudioRenderClient), (LPVOID*)(&audioRenderClient));
+    assert(hr == S_OK);
+
+    // Get the size of the render buffer
+    UINT32 bufferSize;
+    hr = audioClient->GetBufferSize(&bufferSize);
+    assert(hr == S_OK);
+
+    _log.info("Audio buffer size %lld (ms) %u (samples) %u", bufferSizeMs, bufferSize);
+
+    hr = audioClient->Start();
+    assert(hr == S_OK);
+  
+    while (_run) {
+
+        // Any outgoing audio?
+        if (_playQueue.empty()) {
+            // We do this to avoid a high CPU% loop while waiting for something to play.
+            // Should probably reduce the sleep after a recent play to maintain smoothness.
+            Sleep(5);
+        }
+        else {
+            // If there is something waiting to play then check to see if there
+            // is enough room in the audio hardware for it.
+            //
+            // This method retrieves a padding value that indicates the amount of valid, 
+            // unread data that the endpoint buffer currently contains. A rendering 
+            // application can use the padding value to determine how much new data it can 
+            // safely write to the endpoint buffer without overwriting previously written 
+            // data that the audio engine has not yet read from the buffer.
+            //
+            UINT32 bufferPadding;
+            hr = audioClient->GetCurrentPadding(&bufferPadding);
+            assert(hr == S_OK);
+            // Calculate the space that we can write into
+            UINT32 frameCount = bufferSize - bufferPadding;
+            //_log.info("Space used %d %", (100 * bufferPadding) / bufferSize);
+            if (frameCount < BLOCK_SIZE_48K) {
+                continue;
+            }
+
+            // Double-check that there is actually something to be played
+            PCM16Frame frame;
+            if (_playQueue.try_pop(frame)) {
+
+                unsigned blockSize = BLOCK_SIZE_48K;
+
+                // Allocate a render buffer in the hardware for a full block
+                int16_t* buffer = 0;
+                hr = audioRenderClient->GetBuffer(blockSize, (BYTE**)(&buffer));
+                assert(hr == S_OK);
+
+                // NOTE: This is flowing directly into the hardware
+                for (unsigned i = 0; i < blockSize; i++)
+                    *buffer++ = frame.data()[i];
+
+                // IMPORTANT: Release when finished
+                hr = audioRenderClient->ReleaseBuffer(blockSize, 0);
+                assert(hr == S_OK);
+
+                /*
+                // Get playback cursor position
+                IAudioClock* audioClock;
+                audioClient->GetService(__uuidof(IAudioClock), (LPVOID*)(&audioClock));
+                UINT64 audioPlaybackFreq;
+                UINT64 audioPlaybackPos;
+                audioClock->GetFrequency(&audioPlaybackFreq);
+                audioClock->GetPosition(&audioPlaybackPos, 0);
+                audioClock->Release();
+                UINT64 audioPlaybackPosInSeconds = audioPlaybackPos/audioPlaybackFreq;
+                UINT64 audioPlaybackPosInSamples = audioPlaybackPosInSeconds*mixFormat.nSamplesPerSec;
+                */
+            }
+        }
+    }
+
+    audioClient->Stop();
+    audioClient->Release();
+    audioRenderClient->Release();
+
+    return 0;
+}
 
 }

@@ -23,9 +23,13 @@
 #include <string>
 #include <windows.h>
 
+#include "kc1fsz-tools/threadsafequeue.h"
+
 #include "amp-thread.h"
 
 namespace kc1fsz {
+
+class Log;
 
 class MainWindowEvents {
 public:
@@ -38,8 +42,8 @@ public:
 
     static void reg(HINSTANCE hInstance);
 
-    MainWindow(HINSTANCE hInstance, const char* localNodeNumber,
-        ThreadSafeQueue<Request>& msgQueue);
+    MainWindow(HINSTANCE hInstance, Log& log, const char* localNodeNumber,
+        threadsafequeue<Request>& msgQueue);
     ~MainWindow();
     void show(int nCmdShow);
 
@@ -48,11 +52,12 @@ private:
     static LRESULT CALLBACK _windProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     LRESULT _msg(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
+    Log& _log;
     HWND _hwnd;
     HWND _hEditNode;
     HBRUSH _whiteBrush;
     std::string _localNodeNumber;
-    ThreadSafeQueue<Request>& _msgQueue;
+    threadsafequeue<Request>& _msgQueue;
 };
 
 }

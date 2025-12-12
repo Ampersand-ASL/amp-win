@@ -104,7 +104,8 @@ public:
     AdaptorOut* adOut = 0;
 };
 
-ThreadSafeQueue<Request> MsgQueue;
+// #### TODO: Pull this out of the global scope
+threadsafequeue<Request> MsgQueue;
 
 class QueueWatcher : public Runnable2 {
 public: 
@@ -138,8 +139,8 @@ radio0->adaptor1->iax0
 */
 void amp_thread(void* ud) {
 
-    Log log;
-    log.info("Start %ld", (unsigned long long)ud);
+    Log& log = *((Log*)ud);
+    log.info("amp_thread start");
     StdClock clock;
 
     //StatsTask statsTask(log, clock);

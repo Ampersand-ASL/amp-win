@@ -44,9 +44,10 @@ void MainWindow::reg(HINSTANCE hInstance) {
     RegisterClass(&wc);
 }
 
-MainWindow::MainWindow(HINSTANCE hInstance, const char* localNodeNumber,
-    ThreadSafeQueue<Request>& q)
-:   _localNodeNumber(localNodeNumber),
+MainWindow::MainWindow(HINSTANCE hInstance, Log& log, const char* localNodeNumber,
+    threadsafequeue<Request>& q)
+:   _log(log),
+    _localNodeNumber(localNodeNumber),
     _msgQueue(q) {
 
     _whiteBrush = CreateSolidBrush(RGB(255, 255, 255));

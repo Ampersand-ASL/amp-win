@@ -26,19 +26,22 @@
 using namespace std;
 using namespace kc1fsz;
 
-void service_thread(void* l) {
+void service_thread(void* ud) {
 
-    Log log;
-    //Log& log = *((Log*)l);
-    log.info("Start service_thread");
+    Log& log = *((Log*)ud);
+    log.info("service_thread start");
     StdClock clock;
 
     RegisterTask registerTask(log, clock);
     registerTask.configure(getenv("AMP_ASL_REG_URL"), getenv("AMP_NODE0_NUMBER"), 
         getenv("AMP_NODE0_PASSWORD"), atoi(getenv("AMP_IAX_PORT")));
 
+    // #### TODO: STATS
+
     // Main loop        
     const unsigned task2Count = 1;
     Runnable2* tasks2[task2Count] = { &registerTask };
     EventLoop::run(log, clock, 0, 0, tasks2, task2Count);
+
+    // #### TODO: NEED A CLEAN WAY TO EXIT THIS THREAD
 }

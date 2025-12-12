@@ -52,6 +52,7 @@ add_executable(main
   kc1fsz-tools-cpp/src/MicroDNS.cpp
   kc1fsz-tools-cpp/src/StdPollTimer.cpp
   kc1fsz-tools-cpp/src/linux/StdClock.cpp
+  kc1fsz-tools-cpp/src/win32/Win32MTLog.cpp
   kc1fsz-tools-cpp/src/md5/md5c.c
   itu-g711-codec/src/codec.cpp
   itu-g711-codec/src/Plc.cpp
@@ -67,7 +68,7 @@ target_include_directories(main PRIVATE cmsis-dsp-mock/include)
 target_include_directories(main PRIVATE amp-core/src)
 target_include_directories(main PRIVATE amp-core/include)
 #target_include_directories(main PRIVATE sound-map/include)
-target_link_libraries(main -lws2_32 -lcurl -lwinmm)
+target_link_libraries(main -lws2_32 -lcurl -lole32)
 target_link_options(main PRIVATE -mwindows)
 
 # ----- hello-w32 ----------------------------------------------------

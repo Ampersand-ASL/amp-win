@@ -23,6 +23,7 @@ int main(int, const char**) {
 
     StdClock clock;
 
+    // One-time per process
     HRESULT hr = CoInitializeEx(nullptr, COINIT_SPEED_OVER_MEMORY);
     assert(hr == S_OK);
 
@@ -84,12 +85,14 @@ int main(int, const char**) {
     assert(hr == S_OK);
     cout << "Buffer Size " << bufferSize << endl;
 
+    /*
     REFERENCE_TIME defP;
     REFERENCE_TIME minP;
     audioClient->GetDevicePeriod(&defP, &minP);
     cout << "Def (ms) " << defP / (10 * 1000) << endl;
     cout << "Min (ms) " << minP / (10 * 1000) << endl;
-
+    */
+   
     long startTime = clock.timeUs();
 
     hr = audioClient->Start();
