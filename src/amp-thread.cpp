@@ -110,15 +110,19 @@ threadsafequeue<Request> MsgQueue;
 class QueueWatcher : public Runnable2 {
 public: 
 
-    QueueWatcher(LineIAX2& line) : _line(line) { }
+    QueueWatcher(LineIAX2& iax, LineRadioWin& radio) : _iax(iax), _radio(radio) { }
 
     virtual bool run2() {
         Request req;
         if (MsgQueue.try_pop(req)) {
             if (req.cmd == "connect")
-                _line.call(req.localNodeNumber.c_str(), req.targetNodeNumber.c_str());
+                _iax.call(req.localNodeNumber.c_str(), req.targetNodeNumber.c_str());
             else if (req.cmd == "disconnectall")
-                _line.disconnectAllNonPermanent();
+                _iax.disconnectAllNonPermanent();
+            else if (req.cmd == "ptton")
+                _radio.setCos(true);
+            else if (req.cmd == "pttoff")
+                _radio.setCos(false);
             return true;
         }
         else {
@@ -128,7 +132,8 @@ public:
 
 private:
 
-    LineIAX2& _line;
+    LineIAX2& _iax;
+    LineRadioWin& _radio;
 };
 
 /*
@@ -181,7 +186,7 @@ void amp_thread(void* ud) {
     LineIAX2 iax2Channel0(log, clock, 1, mb0, &val, &locReg);
     //iax2Channel0.setTrace(true);
 
-    QueueWatcher watcher0(iax2Channel0);
+    QueueWatcher watcher0(iax2Channel0, radio0);
 
     // Routes
     mb0.adIn = &adaptor0;

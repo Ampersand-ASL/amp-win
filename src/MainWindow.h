@@ -58,6 +58,7 @@ private:
     HBRUSH _whiteBrush;
     std::string _localNodeNumber;
     threadsafequeue<Request>& _msgQueue;
+    bool _pttToggle = false;
 };
 
 }

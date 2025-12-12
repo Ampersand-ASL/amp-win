@@ -18,6 +18,8 @@
 #include <string>
 #include <vector>
 
+#include "kc1fsz-tools/Log.h"
+
 #include "MainWindow.h"
 #include "amp-thread.h"
 
@@ -25,6 +27,7 @@
 #define IDC_EDIT_INPUT 1001
 #define IDC_BUTTON_CONNECT 1002
 #define IDC_BUTTON_DISCONNECTALL 1003
+#define IDC_BUTTON_PTT 1004
 
 using namespace std;
 
@@ -122,6 +125,18 @@ MainWindow::MainWindow(HINSTANCE hInstance, Log& log, const char* localNodeNumbe
         hInstance,        // Application instance handle
         NULL              // Additional app data
     );
+
+    CreateWindow(
+        TEXT("button"),   // Predefined class name
+        TEXT("PTT"), // Button text
+        WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, // Styles
+        10, 100,           // X, Y position
+        150, 25,           // Width, Height
+        _hwnd,             // Parent window handle
+        (HMENU)IDC_BUTTON_PTT,      // Button's unique identifier (ID)
+        hInstance,        // Application instance handle
+        NULL              // Additional app data
+    );
 }
 
 MainWindow::~MainWindow() {
@@ -172,9 +187,23 @@ LRESULT MainWindow::_msg(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
                 req.cmd = "disconnectall";
                 _msgQueue.push(req);
             }
+            else if (controlID == IDC_BUTTON_PTT && messageType == BN_CLICKED) {
+                if (!_pttToggle) {
+                    Request req;
+                    req.cmd = "ptton";
+                    _msgQueue.push(req);
+                    _pttToggle = true;
+                    _log.info("PTT on");
+                } else {
+                    Request req;
+                    req.cmd = "pttoff";
+                    _msgQueue.push(req);
+                    _pttToggle = false;
+                    _log.info("PTT off");
+                }
+            }
             break;
-        }        
-        
+        }                
         case WM_DESTROY:
             PostQuitMessage(0);
             return 0;

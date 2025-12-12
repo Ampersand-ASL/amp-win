@@ -12,4 +12,8 @@ Setup MINGW Environment
 Sound
 -----
 
+After trying a few things I ended up using the Windows WASAPI interface.
+
+[Samples From MSFT](https://learn.microsoft.com/en-us/samples/microsoft/windows-universal-samples/windowsaudiosession/)
+
 https://medium.com/@shahidahmadkhan86/sound-in-windows-the-wasapi-in-c-23024cdac7c6

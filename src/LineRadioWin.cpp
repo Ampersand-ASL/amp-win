@@ -55,6 +55,11 @@ int LineRadioWin::open(const char* deviceName, const char* hidName) {
 void LineRadioWin::close() {
 }
     
+void LineRadioWin::setCos(bool cos) {
+    // #### TODO: THREAD SAFE?
+    _cos = cos;
+}
+
 bool LineRadioWin::run2() {
     return false;
 }
@@ -134,17 +139,26 @@ unsigned LineRadioWin::_audioThread() {
     hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (LPVOID*)(&deviceEnumerator));
     assert(hr == S_OK);
 
-    IMMDevice* audioDevice;
-    hr = deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &audioDevice);
+    IMMDevice* playAudioDevice;
+    hr = deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &playAudioDevice);
     assert(hr == S_OK);
+
+    IMMDevice* captureAudioDevice;
+    hr = deviceEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &captureAudioDevice);
+    assert(SUCCEEDED(hr));
 
     deviceEnumerator->Release();
 
-    IAudioClient2* audioClient;
-    hr = audioDevice->Activate(__uuidof(IAudioClient2), CLSCTX_ALL, nullptr, (LPVOID*)(&audioClient));
+    IAudioClient2* playAudioClient;
+    hr = playAudioDevice->Activate(__uuidof(IAudioClient2), CLSCTX_ALL, nullptr, (LPVOID*)(&playAudioClient));
     assert(hr == S_OK);
 
-    audioDevice->Release();
+    IAudioClient2* captureAudioClient;
+    hr = captureAudioDevice->Activate(__uuidof(IAudioClient2), CLSCTX_ALL, nullptr, (LPVOID*)(&captureAudioClient));
+    assert(hr == S_OK);
+
+    playAudioDevice->Release();
+    captureAudioDevice->Release();
     
     WAVEFORMATEX mixFormat = {};
     mixFormat.wFormatTag = WAVE_FORMAT_PCM;
@@ -167,7 +181,7 @@ unsigned LineRadioWin::_audioThread() {
                             | AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM
                             | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY );
 
-    hr = audioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 
+    hr = playAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 
                                  initStreamFlags, 
     // The buffer capacity as a time value. This parameter is of type REFERENCE_TIME 
     // and is expressed in 100-nanosecond units. This parameter contains the buffer 
@@ -178,21 +192,35 @@ unsigned LineRadioWin::_audioThread() {
                                  0, 
                                  &mixFormat, 
                                  nullptr);
-
     assert(hr == S_OK);
 
-    IAudioRenderClient* audioRenderClient;
-    hr = audioClient->GetService(__uuidof(IAudioRenderClient), (LPVOID*)(&audioRenderClient));
+    hr = captureAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 
+                                 initStreamFlags, 
+                                 requestedSoundBufferDuration, 
+                                 0, 
+                                 &mixFormat, 
+                                 nullptr);
+    assert(hr == S_OK); 
+
+    IAudioRenderClient* renderClient;
+    hr = playAudioClient->GetService(__uuidof(IAudioRenderClient), (LPVOID*)(&renderClient));
+    assert(hr == S_OK);
+
+    IAudioCaptureClient* captureClient;
+    hr = captureAudioClient->GetService(__uuidof(IAudioCaptureClient), (LPVOID*)(&captureClient));
     assert(hr == S_OK);
 
     // Get the size of the render buffer
-    UINT32 bufferSize;
-    hr = audioClient->GetBufferSize(&bufferSize);
+    UINT32 playBufferSize;
+    hr = playAudioClient->GetBufferSize(&playBufferSize);
     assert(hr == S_OK);
 
-    _log.info("Audio buffer size %lld (ms) %u (samples) %u", bufferSizeMs, bufferSize);
+    _log.info("Play buffer size %lld (ms) %u (samples) %u", bufferSizeMs, playBufferSize);
 
-    hr = audioClient->Start();
+    hr = playAudioClient->Start();
+    assert(hr == S_OK);
+
+    hr = captureAudioClient->Start();
     assert(hr == S_OK);
   
     while (_run) {
@@ -214,10 +242,10 @@ unsigned LineRadioWin::_audioThread() {
             // data that the audio engine has not yet read from the buffer.
             //
             UINT32 bufferPadding;
-            hr = audioClient->GetCurrentPadding(&bufferPadding);
+            hr = playAudioClient->GetCurrentPadding(&bufferPadding);
             assert(hr == S_OK);
             // Calculate the space that we can write into
-            UINT32 frameCount = bufferSize - bufferPadding;
+            UINT32 frameCount = playBufferSize - bufferPadding;
             //_log.info("Space used %d %", (100 * bufferPadding) / bufferSize);
             if (frameCount < BLOCK_SIZE_48K) {
                 continue;
@@ -231,7 +259,7 @@ unsigned LineRadioWin::_audioThread() {
 
                 // Allocate a render buffer in the hardware for a full block
                 int16_t* buffer = 0;
-                hr = audioRenderClient->GetBuffer(blockSize, (BYTE**)(&buffer));
+                hr = renderClient->GetBuffer(blockSize, (BYTE**)(&buffer));
                 assert(hr == S_OK);
 
                 // NOTE: This is flowing directly into the hardware
@@ -239,7 +267,7 @@ unsigned LineRadioWin::_audioThread() {
                     *buffer++ = frame.data()[i];
 
                 // IMPORTANT: Release when finished
-                hr = audioRenderClient->ReleaseBuffer(blockSize, 0);
+                hr = renderClient->ReleaseBuffer(blockSize, 0);
                 assert(hr == S_OK);
 
                 /*
@@ -258,9 +286,9 @@ unsigned LineRadioWin::_audioThread() {
         }
     }
 
-    audioClient->Stop();
-    audioClient->Release();
-    audioRenderClient->Release();
+    playAudioClient->Stop();
+    playAudioClient->Release();
+    renderClient->Release();
 
     return 0;
 }

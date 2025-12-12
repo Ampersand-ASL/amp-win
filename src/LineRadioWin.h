@@ -34,6 +34,7 @@ public:
 
     int open(const char* deviceName, const char* hidName);    
     void close();
+    void setCos(bool cos);
 
     // ----- From MessageConsumer ---------------------------------------------
 
@@ -64,6 +65,9 @@ private:
     uint32_t _playSilenceIntervalMs = 20 * 4;
     // This queue passes play audio out to the audio thread
     threadsafequeue<PCM16Frame> _playQueue;
+
+    // #### TODO: MAKE THIS THREAD SAFE
+    volatile bool _cos = false;
 };
 
 }
