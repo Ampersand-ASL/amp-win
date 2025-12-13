@@ -37,15 +37,18 @@ namespace kc1fsz {
 LineRadioWin::LineRadioWin(Log& log, Clock& clock, MessageConsumer& consumer, 
     unsigned busId, unsigned callId, unsigned destBusId, unsigned destCallId)
 :   LineRadio(log, clock, consumer, busId, callId, destBusId, destCallId) {
-    // Get the audio thread running
+
+    // Get the audio threads running
     _run = true;
     unsigned int threadID;
-    _threadH = (HANDLE)_beginthreadex(NULL, 0, _audioThread, (void*)this, 0, &threadID);
+    _playThreadH = (HANDLE)_beginthreadex(NULL, 0, _playThread, (void*)this, 0, &threadID);
+    _captureThreadH = (HANDLE)_beginthreadex(NULL, 0, _captureThread, (void*)this, 0, &threadID);
 }
 
 LineRadioWin::~LineRadioWin() {
     _run = false;
-    WaitForSingleObject(_threadH, INFINITE);
+    WaitForSingleObject(_playThreadH, INFINITE);
+    WaitForSingleObject(_captureThreadH, INFINITE);
 }
 
 int LineRadioWin::open(const char* deviceName, const char* hidName) {    
@@ -60,17 +63,23 @@ void LineRadioWin::setCos(bool cos) {
     _cos = cos;
 }
 
+/**
+ * This is activity that happens on the "main" thread.
+ */
 bool LineRadioWin::run2() {
 
-    // Deal with audio coming in 
+    // Deal with captured audio streaming in from the audio thread
+    unsigned frameCount = 0;
     PCM16Frame frame;
-    if (_captureQueue.try_pop(frame)) {
+
+    while (_captureQueue.try_pop(frame)) {
 
         assert(frame.size() == BLOCK_SIZE_48K);
 
         uint64_t now = _clock.timeUs();
         if (_captureCount == 0)
             _captureStartUs = now;
+        // #### TODO: WHAT IS THIS RELATIVE TO?
         uint64_t idealNow = _captureStartUs + (_captureCount * BLOCK_PERIOD_MS * 1000);
         _captureCount++;
 
@@ -93,13 +102,10 @@ bool LineRadioWin::run2() {
         // Here is where the actual processing of the new block happens
         _processCapturedAudio(frame.data(), BLOCK_SIZE_48K, now, idealNow);
 
-        _log.info("Captured frame");
+        frameCount++;
+    }
 
-        return true;
-    }
-    else {
-        return false;
-    }
+    return frameCount > 0;
 }
 
 void LineRadioWin::audioRateTick() {
@@ -158,16 +164,18 @@ void LineRadioWin::_checkTimeouts() {
 void LineRadioWin::oneSecTick() {
 }
 
-unsigned LineRadioWin::_audioThread(void* o) {    
-    return ((LineRadioWin*)o)->_audioThread();
+// ===== PLAY THREAD ==========================================================
+
+unsigned LineRadioWin::_playThread(void* o) {    
+    return ((LineRadioWin*)o)->_playThread();
 }
 
 // #### TODO: CLEAN UP ASSERTS
 // #### TODO: MAKE IT SO WE CAN OPEN/CLOSE MULTIPLE TIMES (i.e. DEVICE CHANGE)
 
-unsigned LineRadioWin::_audioThread() {
+unsigned LineRadioWin::_playThread() {
 
-    _log.info("LineRadioWin thread start");
+    _log.info("LineRadioWin play thread start");
 
     HRESULT hr;
 
@@ -179,41 +187,32 @@ unsigned LineRadioWin::_audioThread() {
     hr = deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &playAudioDevice);
     assert(hr == S_OK);
 
-    IMMDevice* captureAudioDevice;
-    hr = deviceEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &captureAudioDevice);
-    assert(SUCCEEDED(hr));
-
     deviceEnumerator->Release();
 
     IAudioClient2* playAudioClient;
     hr = playAudioDevice->Activate(__uuidof(IAudioClient2), CLSCTX_ALL, nullptr, (LPVOID*)(&playAudioClient));
     assert(hr == S_OK);
 
-    IAudioClient2* captureAudioClient;
-    hr = captureAudioDevice->Activate(__uuidof(IAudioClient2), CLSCTX_ALL, nullptr, (LPVOID*)(&captureAudioClient));
-    assert(hr == S_OK);
-
     playAudioDevice->Release();
-    captureAudioDevice->Release();
     
-    WAVEFORMATEX mixFormat = {};
-    mixFormat.wFormatTag = WAVE_FORMAT_PCM;
-    mixFormat.nChannels = 1;
-    mixFormat.nSamplesPerSec = 48000;
-    mixFormat.wBitsPerSample = 16;
-    mixFormat.nBlockAlign = (mixFormat.nChannels * mixFormat.wBitsPerSample) / 8;
-    mixFormat.nAvgBytesPerSec = mixFormat.nSamplesPerSec * mixFormat.nBlockAlign;
+    WAVEFORMATEX playMixFormat = {};
+    playMixFormat.wFormatTag = WAVE_FORMAT_PCM;
+    playMixFormat.nChannels = 1;
+    playMixFormat.nSamplesPerSec = 48000;
+    playMixFormat.wBitsPerSample = 16;
+    playMixFormat.nBlockAlign = (playMixFormat.nChannels * playMixFormat.wBitsPerSample) / 8;
+    playMixFormat.nAvgBytesPerSec = playMixFormat.nSamplesPerSec * playMixFormat.nBlockAlign;
 
     // This controls the size of the buffer, and also how long buffers get filled
     // before audio can be heard.
 
     // This is hundred nanoseconds
-    const int64_t REFTIMES_PER_SEC = 500000; 
+    const int64_t REFTIMES_PER_SEC = 50000000; 
     const int64_t bufferSizeUs = REFTIMES_PER_SEC / 10;
     const int64_t bufferSizeMs = bufferSizeUs / 1000;
-    REFERENCE_TIME requestedSoundBufferDuration = REFTIMES_PER_SEC;
+    const REFERENCE_TIME requestedSoundBufferDuration = REFTIMES_PER_SEC;
 
-    DWORD initStreamFlags = ( AUDCLNT_STREAMFLAGS_RATEADJUST 
+    const DWORD initStreamFlags = ( AUDCLNT_STREAMFLAGS_RATEADJUST 
                             | AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM
                             | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY );
 
@@ -226,24 +225,12 @@ unsigned LineRadioWin::_audioThread() {
     // exclusive mode). 
                                  requestedSoundBufferDuration, 
                                  0, 
-                                 &mixFormat, 
+                                 &playMixFormat, 
                                  nullptr);
     assert(hr == S_OK);
-
-    hr = captureAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 
-                                 initStreamFlags, 
-                                 requestedSoundBufferDuration, 
-                                 0, 
-                                 &mixFormat, 
-                                 nullptr);
-    assert(hr == S_OK); 
 
     IAudioRenderClient* renderClient;
     hr = playAudioClient->GetService(__uuidof(IAudioRenderClient), (LPVOID*)(&renderClient));
-    assert(hr == S_OK);
-
-    IAudioCaptureClient* captureClient;
-    hr = captureAudioClient->GetService(__uuidof(IAudioCaptureClient), (LPVOID*)(&captureClient));
     assert(hr == S_OK);
 
     // Get the size of the render buffer
@@ -252,26 +239,16 @@ unsigned LineRadioWin::_audioThread() {
     assert(hr == S_OK);
     _log.info("Play buffer size %lld (ms) %u (samples)", bufferSizeMs, playBufferSize);
 
-    UINT32 captureBufferSize;
-    hr = captureAudioClient->GetBufferSize(&captureBufferSize);
-    assert(hr == S_OK);
-    _log.info("Capture buffer size %u (samples)", captureBufferSize);
-
     hr = playAudioClient->Start();
     assert(hr == S_OK);
 
-    hr = captureAudioClient->Start();
-    assert(hr == S_OK);
-  
+    // The thread event loop
+
     while (_run) {
 
         // Any outgoing audio?
-        if (_playQueue.empty()) {
-            // We do this to avoid a high CPU% loop while waiting for something to play.
-            // Should probably reduce the sleep after a recent play to maintain smoothness.
-            Sleep(5);
-        }
-        else {
+        if (!_playQueue.empty()) {
+
             // If there is something waiting to play then check to see if there
             // is enough room in the audio hardware for it.
             //
@@ -286,87 +263,194 @@ unsigned LineRadioWin::_audioThread() {
             assert(hr == S_OK);
             // Calculate the space that we can write into
             UINT32 frameCount = playBufferSize - bufferPadding;
-            //_log.info("Space used %d %", (100 * bufferPadding) / bufferSize);
+            //_log.info("Space used %d %", (100 * bufferPadding) / playBufferSize);
+
+            // Is there room for a full frame in the hardware?
             if (frameCount < BLOCK_SIZE_48K) {
-                continue;
+                break;
+                // Do nothing
             }
+            else {
+                // Double-check that there is actually something to be played
+                PCM16Frame frame;
+                if (_playQueue.try_pop(frame)) {
 
-            // Double-check that there is actually something to be played
-            PCM16Frame frame;
-            if (_playQueue.try_pop(frame)) {
+                    unsigned blockSize = BLOCK_SIZE_48K;
 
-                unsigned blockSize = BLOCK_SIZE_48K;
+                    // Allocate a render buffer in the hardware for a full block
+                    int16_t* buffer = 0;
+                    hr = renderClient->GetBuffer(blockSize, (BYTE**)(&buffer));
+                    assert(hr == S_OK);
 
-                // Allocate a render buffer in the hardware for a full block
-                int16_t* buffer = 0;
-                hr = renderClient->GetBuffer(blockSize, (BYTE**)(&buffer));
-                assert(hr == S_OK);
+                    // NOTE: This is flowing directly into the hardware
+                    for (unsigned i = 0; i < blockSize; i++)
+                        *buffer++ = frame.data()[i];
 
-                // NOTE: This is flowing directly into the hardware
-                for (unsigned i = 0; i < blockSize; i++)
-                    *buffer++ = frame.data()[i];
-
-                // IMPORTANT: Release when finished
-                hr = renderClient->ReleaseBuffer(blockSize, 0);
-                assert(hr == S_OK);
-
-                /*
-                // Get playback cursor position
-                IAudioClock* audioClock;
-                audioClient->GetService(__uuidof(IAudioClock), (LPVOID*)(&audioClock));
-                UINT64 audioPlaybackFreq;
-                UINT64 audioPlaybackPos;
-                audioClock->GetFrequency(&audioPlaybackFreq);
-                audioClock->GetPosition(&audioPlaybackPos, 0);
-                audioClock->Release();
-                UINT64 audioPlaybackPosInSeconds = audioPlaybackPos/audioPlaybackFreq;
-                UINT64 audioPlaybackPosInSamples = audioPlaybackPosInSeconds*mixFormat.nSamplesPerSec;
-                */
+                    // IMPORTANT: Release when finished
+                    hr = renderClient->ReleaseBuffer(blockSize, 0);
+                    assert(hr == S_OK);
+                }
             }
         }
-
-        // ----- Capture ------------------------------------------------------
-        //
-        // NOTE: Most of this work happens regardless of whether the COS 
-        // signal is active. We do this to keep all of the audio capture buffers
-        // clear. But most of the time the audio is just discarded, or possibly
-        // just used for CTCSS/squelch detection.
-       
-        {
-            UINT32 nFrames;
-            DWORD flags;
-            BYTE* captureBuffer;
-
-            hr = captureClient->GetBuffer(&captureBuffer, &nFrames, &flags, NULL, NULL);
-            assert(SUCCEEDED(hr));
-
-            //_log.info("Capture frames %d", nFrames);
-
-            // #### TODO: NEED TO ENFORCE MAX_BUFFER_SIZE
-            // Pull the information out of the hardware
-            for (unsigned i = 0; i < nFrames; i++)
-                _captureBuffer[_captureBufferSize++] = captureBuffer[i];
-
-            hr = captureClient->ReleaseBuffer(nFrames);
-            assert(SUCCEEDED(hr));
-
-            // Send as many frames back if possible
-            while (_captureBufferSize > BLOCK_SIZE_48K) {
-                // #### TODO: THREAD SAFETY
-                // #### TODO: MORE SOPHSITICATED COS
-                // Send the oldest complete block of audio IF THE COS IS ENABLED
-                if (_cos) 
-                    _captureQueue.push(PCM16Frame(_captureBuffer, BLOCK_SIZE_48K));
-                // Shift left - overlapping move
-                ::memmove(_captureBuffer, _captureBuffer + _captureBufferSize, BLOCK_SIZE_48K);
-                _captureBufferSize -= BLOCK_SIZE_48K;
-            }
+        else {
+            Sleep(5);
         }
     }
 
     playAudioClient->Stop();
     playAudioClient->Release();
-    renderClient->Release();
+
+    return 0;
+}
+
+// ===== CAPTURE THREAD ========================================================
+
+unsigned LineRadioWin::_captureThread(void* o) {    
+    return ((LineRadioWin*)o)->_captureThread();
+}
+
+// #### TODO: CLEAN UP ASSERTS
+// #### TODO: MAKE IT SO WE CAN OPEN/CLOSE MULTIPLE TIMES (i.e. DEVICE CHANGE)
+
+unsigned LineRadioWin::_captureThread() {
+
+    _log.info("LineRadioWin capture thread start");
+
+    HRESULT hr;
+
+    IMMDeviceEnumerator* deviceEnumerator;
+    hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (LPVOID*)(&deviceEnumerator));
+    assert(hr == S_OK);
+
+    IMMDevice* captureAudioDevice;
+    hr = deviceEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &captureAudioDevice);
+    assert(SUCCEEDED(hr));
+
+    deviceEnumerator->Release();
+
+    IAudioClient2* captureAudioClient;
+    hr = captureAudioDevice->Activate(__uuidof(IAudioClient2), CLSCTX_ALL, nullptr, (LPVOID*)(&captureAudioClient));
+    assert(hr == S_OK);
+
+    captureAudioDevice->Release();
+    
+    WAVEFORMATEX captureMixFormat = {};
+    captureMixFormat.wFormatTag = WAVE_FORMAT_PCM;
+    captureMixFormat.nChannels = 1;
+    captureMixFormat.nSamplesPerSec = 48000;
+    captureMixFormat.wBitsPerSample = 16;
+    captureMixFormat.nBlockAlign = (captureMixFormat.nChannels * captureMixFormat.wBitsPerSample) / 8;
+    captureMixFormat.nAvgBytesPerSec = captureMixFormat.nSamplesPerSec * captureMixFormat.nBlockAlign;
+
+    // This controls the size of the capture buffer, and also how much lag 
+    // is built into the capture process.  We have left enough room for a 
+    // few full frames in case things fall behind.
+
+    // This is hundred nanoseconds
+    const int64_t REFTIMES_PER_SEC = 400000; 
+    const int64_t bufferSizeUs = REFTIMES_PER_SEC / 10;
+    const int64_t bufferSizeMs = bufferSizeUs / 1000;
+    const REFERENCE_TIME requestedSoundBufferDuration = REFTIMES_PER_SEC;
+
+    const DWORD initStreamFlags = ( AUDCLNT_STREAMFLAGS_RATEADJUST 
+                            | AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM
+                            | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY );
+
+    hr = captureAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 
+                                 initStreamFlags, 
+                                 requestedSoundBufferDuration, 
+                                 0, 
+                                 &captureMixFormat, 
+                                 nullptr);
+    assert(hr == S_OK); 
+
+    IAudioCaptureClient* captureClient;
+    hr = captureAudioClient->GetService(__uuidof(IAudioCaptureClient), (LPVOID*)(&captureClient));
+    assert(hr == S_OK);
+
+    UINT32 captureBufferSize;
+    hr = captureAudioClient->GetBufferSize(&captureBufferSize);
+    assert(hr == S_OK);
+    _log.info("Capture buffer size %lld (ms) %u (samples)", bufferSizeMs, captureBufferSize);
+
+    hr = captureAudioClient->Start();
+    assert(hr == S_OK);
+  
+    while (_run) {
+
+        // NOTE: Most of this work happens regardless of whether the COS 
+        // signal is active. We do this to keep all of the audio capture buffers
+        // clear. But most of the time the audio is just discarded, or possibly
+        // just used for CTCSS/squelch detection.
+
+        // Work hard until a complete frame is captured
+        while (_captureBufferSize < BLOCK_SIZE_48K) {
+       
+            BYTE* captureBuffer;
+            UINT32 nFrames = 0;
+            DWORD flags;
+
+            hr = captureClient->GetBuffer(&captureBuffer, &nFrames, &flags, NULL, NULL);
+            assert(SUCCEEDED(hr));
+
+            if (nFrames > 0) {
+                // Not sure if this ever happens
+                if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
+                    for (unsigned i = 0; i < nFrames; i++)
+                        _captureBuffer[_captureBufferSize++] = 0;
+                } else {
+                    // #### TODO: NEED TO ENFORCE MAX_BUFFER_SIZE
+                    // Pull the information out of the hardware
+                    int16_t* pcm = (int16_t*)captureBuffer;
+                    for (unsigned i = 0; i < nFrames; i++)
+                        _captureBuffer[_captureBufferSize++] = pcm[i];
+                }
+
+                assert(_captureBufferSize <= MAX_CAPTURE_BUFFER_SIZE);
+            }
+
+            hr = captureClient->ReleaseBuffer(nFrames);
+            assert(SUCCEEDED(hr));
+        }
+
+        // Send as many full frames back if possible
+        while (_captureBufferSize >= BLOCK_SIZE_48K) {
+            // #### TODO: THREAD SAFETY
+            // #### TODO: MORE SOPHSITICATED COS
+            // Send the oldest complete block of audio IF THE COS IS ENABLED
+            if (_cos) {
+                //_parrotQueue.push(PCM16Frame(_captureBuffer, BLOCK_SIZE_48K));
+                _captureQueue.push(PCM16Frame(_captureBuffer, BLOCK_SIZE_48K));
+            }
+
+            // If there is anything left then shift left - overlapping move
+            if (_captureBufferSize > BLOCK_SIZE_48K) {
+                ::memmove(_captureBuffer, _captureBuffer + BLOCK_SIZE_48K, 
+                    (_captureBufferSize - BLOCK_SIZE_48K) * sizeof(int16_t));
+            }
+            _captureBufferSize -= BLOCK_SIZE_48K;
+        }
+
+        // #### Temporary parrot
+        if (_cos && !_previousCos) {
+            _log.info("KEY DOWN");
+        }
+        else if (!_cos && _previousCos) {
+            _log.info("KEY UP");
+            //PCM16Frame r;
+            //while (_parrotQueue.try_pop(r))
+            //    _playQueue.push(r);
+        }
+        _previousCos = _cos;
+
+        // WARNING: on Windows this will typically result in a 15-20ms sleep.
+        // Buffers have been configured so that we can get away with sleeping
+        // for a full audio frame period.
+        Sleep(1);
+    }
+
+    captureAudioClient->Stop();
+    captureAudioClient->Release();
 
     return 0;
 }
