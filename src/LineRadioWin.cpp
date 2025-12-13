@@ -34,19 +34,46 @@ using namespace std;
 
 namespace kc1fsz {
 
+/*
+DEVELOPER NOTES
+---------------
+
+I've spent too many hours of my life chasing deadlocks, non-reproducible bugs, 
+and other random behaviors caused by subtle mistakes in MT programs. My advice:
+JUST DON'T DO IT. There are very few cases where multi-threading is really needed,
+and the downside of complexity and potential for defects usually outweighs the 
+upside. MY IMPORTANT RULE OF THUMB: When forced into MT programming, "shared"
+objects should be strictly avoided. The threads should only interact via a few 
+(thread-safe) message queues. 
+
+In This Case
+------------
+
+The code below does something that I generally try hard to avoid: multi-threaded
+programming. In this case, it is unavoidable given that the Windows WASAPI audio
+API doesn't provide an eventing model.
+
+There are two threads:
+* One for dealing with outbound (playing) audio. The _playQueue is shared between
+the "main" thread and the _playThread.
+* One for dealing with inbound (capturing) audio. The _captureQueue is shared 
+between the "main" thread and the _captureThread.
+
+*/
 LineRadioWin::LineRadioWin(Log& log, Clock& clock, MessageConsumer& consumer, 
     unsigned busId, unsigned callId, unsigned destBusId, unsigned destCallId)
-:   LineRadio(log, clock, consumer, busId, callId, destBusId, destCallId) {
+:   LineRadio(log, clock, consumer, busId, callId, destBusId, destCallId),
+    _run(true),
+    _captureEnabled(false) {
 
     // Get the audio threads running
-    _run = true;
     unsigned int threadID;
     _playThreadH = (HANDLE)_beginthreadex(NULL, 0, _playThread, (void*)this, 0, &threadID);
     _captureThreadH = (HANDLE)_beginthreadex(NULL, 0, _captureThread, (void*)this, 0, &threadID);
 }
 
 LineRadioWin::~LineRadioWin() {
-    _run = false;
+    _run.store(false);
     WaitForSingleObject(_playThreadH, INFINITE);
     WaitForSingleObject(_captureThreadH, INFINITE);
 }
@@ -59,8 +86,7 @@ void LineRadioWin::close() {
 }
     
 void LineRadioWin::setCos(bool cos) {
-    // #### TODO: THREAD SAFE?
-    _cos = cos;
+    _captureEnabled.store(cos);
 }
 
 /**
@@ -70,9 +96,10 @@ bool LineRadioWin::run2() {
 
     // Deal with captured audio streaming in from the audio thread
     unsigned frameCount = 0;
-    PCM16Frame frame;
 
-    while (_captureQueue.try_pop(frame)) {
+    // A thread-safe atomic pull from the capture queue
+    PCM16Frame frame;
+    while (_captureQueueMTSafe.try_pop(frame)) {
 
         assert(frame.size() == BLOCK_SIZE_48K);
 
@@ -138,8 +165,8 @@ void LineRadioWin::_play(const Message& msg) {
     // place for diagnostic purposes.
     _analyzePlayedAudio(pcm48k_2, BLOCK_SIZE_48K);
 
-    // Pass the frame off to the worker thread
-    _playQueue.push(PCM16Frame(pcm48k_2, BLOCK_SIZE_48K));
+    // A thread-safe push of the audio onto the play thread
+    _playQueueMTSafe.push(PCM16Frame(pcm48k_2, BLOCK_SIZE_48K));
 
     _lastPlayedFrameMs = _clock.time();
     _playing = true;
@@ -151,17 +178,14 @@ void LineRadioWin::_checkTimeouts() {
     if (_playing &&
         _clock.isPast(_lastPlayedFrameMs + _playSilenceIntervalMs)) {
         _playing = false;
-        _log.info("Play End");
         _playEnd();
     }
+
     if (_capturing &&
         _clock.isPast(_lastCapturedFrameMs + _captureSilenceIntervalMs)) {
         _capturing = false;
         _captureEnd();
     }
-}
-
-void LineRadioWin::oneSecTick() {
 }
 
 // ===== PLAY THREAD ==========================================================
@@ -244,10 +268,10 @@ unsigned LineRadioWin::_playThread() {
 
     // The thread event loop
 
-    while (_run) {
+    while (_run.load()) {
 
         // Any outgoing audio?
-        if (!_playQueue.empty()) {
+        if (!_playQueueMTSafe.empty()) {
 
             // If there is something waiting to play then check to see if there
             // is enough room in the audio hardware for it.
@@ -263,7 +287,6 @@ unsigned LineRadioWin::_playThread() {
             assert(hr == S_OK);
             // Calculate the space that we can write into
             UINT32 frameCount = playBufferSize - bufferPadding;
-            //_log.info("Space used %d %", (100 * bufferPadding) / playBufferSize);
 
             // Is there room for a full frame in the hardware?
             if (frameCount < BLOCK_SIZE_48K) {
@@ -273,7 +296,7 @@ unsigned LineRadioWin::_playThread() {
             else {
                 // Double-check that there is actually something to be played
                 PCM16Frame frame;
-                if (_playQueue.try_pop(frame)) {
+                if (_playQueueMTSafe.try_pop(frame)) {
 
                     unsigned blockSize = BLOCK_SIZE_48K;
 
@@ -293,6 +316,9 @@ unsigned LineRadioWin::_playThread() {
             }
         }
         else {
+            // WARNING: on Windows this will typically result in a 15-20ms sleep.
+            // Buffers have been configured so that we can get away with sleeping
+            // for a full audio frame period.
             Sleep(5);
         }
     }
@@ -376,7 +402,7 @@ unsigned LineRadioWin::_captureThread() {
     hr = captureAudioClient->Start();
     assert(hr == S_OK);
   
-    while (_run) {
+    while (_run.load()) {
 
         // NOTE: Most of this work happens regardless of whether the COS 
         // signal is active. We do this to keep all of the audio capture buffers
@@ -415,33 +441,17 @@ unsigned LineRadioWin::_captureThread() {
 
         // Send as many full frames back if possible
         while (_captureBufferSize >= BLOCK_SIZE_48K) {
-            // #### TODO: THREAD SAFETY
-            // #### TODO: MORE SOPHSITICATED COS
             // Send the oldest complete block of audio IF THE COS IS ENABLED
-            if (_cos) {
-                //_parrotQueue.push(PCM16Frame(_captureBuffer, BLOCK_SIZE_48K));
-                _captureQueue.push(PCM16Frame(_captureBuffer, BLOCK_SIZE_48K));
-            }
+            if (_captureEnabled.load()) 
+                _captureQueueMTSafe.push(PCM16Frame(_captureBuffer, BLOCK_SIZE_48K));
 
-            // If there is anything left then shift left - overlapping move
-            if (_captureBufferSize > BLOCK_SIZE_48K) {
+            // If there is anything left over then shift left - overlapping move
+            if (_captureBufferSize > BLOCK_SIZE_48K) 
                 ::memmove(_captureBuffer, _captureBuffer + BLOCK_SIZE_48K, 
                     (_captureBufferSize - BLOCK_SIZE_48K) * sizeof(int16_t));
-            }
+
             _captureBufferSize -= BLOCK_SIZE_48K;
         }
-
-        // #### Temporary parrot
-        if (_cos && !_previousCos) {
-            _log.info("KEY DOWN");
-        }
-        else if (!_cos && _previousCos) {
-            _log.info("KEY UP");
-            //PCM16Frame r;
-            //while (_parrotQueue.try_pop(r))
-            //    _playQueue.push(r);
-        }
-        _previousCos = _cos;
 
         // WARNING: on Windows this will typically result in a 15-20ms sleep.
         // Buffers have been configured so that we can get away with sleeping

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <winsock2.h>
+#include <atomic>
 
 #include "kc1fsz-tools/threadsafequeue.h"
 
@@ -25,6 +26,9 @@
 
 namespace kc1fsz {
 
+/**
+ * An audio interface line for MSFT Windows. Uses the WASAPI audio API.
+ */
 class LineRadioWin : public LineRadio {
 public:
 
@@ -34,6 +38,7 @@ public:
 
     int open(const char* deviceName, const char* hidName);    
     void close();
+
     void setCos(bool cos);
 
     // ----- From MessageConsumer ---------------------------------------------
@@ -44,7 +49,6 @@ public:
 
     bool run2();
     void audioRateTick();
-    void oneSecTick();
 
 private:
 
@@ -56,7 +60,8 @@ private:
     void _play(const Message& msg);
     void _checkTimeouts();
 
-    bool _run = false;
+    std::atomic<bool> _run;
+    std::atomic<bool> _captureEnabled;
 
     HANDLE _playThreadH = 0;
     bool _playing = false;
@@ -66,7 +71,7 @@ private:
     // to have ended. 
     uint32_t _playSilenceIntervalMs = 20 * 4;
     // This queue passes play audio out to the audio thread
-    threadsafequeue<PCM16Frame> _playQueue;
+    threadsafequeue<PCM16Frame> _playQueueMTSafe;
 
     HANDLE _captureThreadH = 0;
     bool _capturing = false;
@@ -75,17 +80,12 @@ private:
     uint32_t _lastCapturedFrameMs = 0;
     // If we go silent for this amount of time the capture is assumed to have ended. 
     uint32_t _captureSilenceIntervalMs = 20 * 4;
-    // #### TODO: MAKE THIS THREAD SAFE
-    volatile bool _cos = false;
+
     // This queue passes capture audio out of the audio thread
-    threadsafequeue<PCM16Frame> _captureQueue;
+    threadsafequeue<PCM16Frame> _captureQueueMTSafe;
     static const unsigned MAX_CAPTURE_BUFFER_SIZE = BLOCK_SIZE_48K * 4;
     int16_t _captureBuffer[MAX_CAPTURE_BUFFER_SIZE];
     unsigned _captureBufferSize = 0;
-
-    // #### TEMP
-    threadsafequeue<PCM16Frame> _parrotQueue;
-    bool _previousCos = false;
 };
 
 }
