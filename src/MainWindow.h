@@ -55,6 +55,7 @@ private:
     Log& _log;
     HWND _hwnd;
     HWND _hEditNode;
+    HWND _hPttButton;
     HBRUSH _whiteBrush;
     std::string _localNodeNumber;
     threadsafequeue<Request>& _msgQueue;

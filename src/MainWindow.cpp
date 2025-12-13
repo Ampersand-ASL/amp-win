@@ -67,7 +67,7 @@ MainWindow::MainWindow(HINSTANCE hInstance, Log& log, const char* localNodeNumbe
         WS_OVERLAPPEDWINDOW,            // Window style
 
         // Size and position
-        400, 300, CW_USEDEFAULT, CW_USEDEFAULT,
+        100, 100, 500, 150,
 
         NULL,       // Parent window    
         NULL,       // Menu
@@ -126,12 +126,12 @@ MainWindow::MainWindow(HINSTANCE hInstance, Log& log, const char* localNodeNumbe
         NULL              // Additional app data
     );
 
-    CreateWindow(
+    _hPttButton = CreateWindow(
         TEXT("button"),   // Predefined class name
-        TEXT("PTT"), // Button text
+        TEXT("PTT (Currently Unkeyed)"), // Button text
         WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, // Styles
-        10, 100,           // X, Y position
-        150, 25,           // Width, Height
+        10, 80,           // X, Y position
+        200, 25,           // Width, Height
         _hwnd,             // Parent window handle
         (HMENU)IDC_BUTTON_PTT,      // Button's unique identifier (ID)
         hInstance,        // Application instance handle
@@ -194,12 +194,14 @@ LRESULT MainWindow::_msg(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
                     _msgQueue.push(req);
                     _pttToggle = true;
                     _log.info("PTT on");
+                    SendMessage(_hPttButton, WM_SETTEXT, 0, (LPARAM)TEXT("PTT (Currently Keyed)"));
                 } else {
                     Request req;
                     req.cmd = "pttoff";
                     _msgQueue.push(req);
                     _pttToggle = false;
                     _log.info("PTT off");
+                    SendMessage(_hPttButton, WM_SETTEXT, 0, (LPARAM)TEXT("PTT (Currently Unkeyed)"));
                 }
             }
             break;

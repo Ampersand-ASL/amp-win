@@ -80,7 +80,6 @@ private:
     uint32_t _lastCapturedFrameMs = 0;
     // If we go silent for this amount of time the capture is assumed to have ended. 
     uint32_t _captureSilenceIntervalMs = 20 * 4;
-
     // This queue passes capture audio out of the audio thread
     threadsafequeue<PCM16Frame> _captureQueueMTSafe;
     static const unsigned MAX_CAPTURE_BUFFER_SIZE = BLOCK_SIZE_48K * 4;

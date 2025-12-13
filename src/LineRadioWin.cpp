@@ -139,6 +139,23 @@ void LineRadioWin::audioRateTick() {
      _checkTimeouts();
 }
 
+// #### TODO: CONSIDER CONSOLIDATING THIS PART TO LineRadio
+void LineRadioWin::_checkTimeouts() {
+
+    // Detect transitions from audio to silence
+    if (_playing &&
+        _clock.isPast(_lastPlayedFrameMs + _playSilenceIntervalMs)) {
+        _playing = false;
+        _playEnd();
+    }
+
+    if (_capturing &&
+        _clock.isPast(_lastCapturedFrameMs + _captureSilenceIntervalMs)) {
+        _capturing = false;
+        _captureEnd();
+    }
+}
+
 // ===== Play Related =========================================================
 
 void LineRadioWin::consume(const Message& frame) {
@@ -172,21 +189,6 @@ void LineRadioWin::_play(const Message& msg) {
     _playing = true;
 }
 
-void LineRadioWin::_checkTimeouts() {
-
-    // Detect transitions from audio to silence
-    if (_playing &&
-        _clock.isPast(_lastPlayedFrameMs + _playSilenceIntervalMs)) {
-        _playing = false;
-        _playEnd();
-    }
-
-    if (_capturing &&
-        _clock.isPast(_lastCapturedFrameMs + _captureSilenceIntervalMs)) {
-        _capturing = false;
-        _captureEnd();
-    }
-}
 
 // ===== PLAY THREAD ==========================================================
 
@@ -231,7 +233,7 @@ unsigned LineRadioWin::_playThread() {
     // before audio can be heard.
 
     // This is hundred nanoseconds
-    const int64_t REFTIMES_PER_SEC = 50000000; 
+    const int64_t REFTIMES_PER_SEC = 5000000; 
     const int64_t bufferSizeUs = REFTIMES_PER_SEC / 10;
     const int64_t bufferSizeMs = bufferSizeUs / 1000;
     const REFERENCE_TIME requestedSoundBufferDuration = REFTIMES_PER_SEC;
