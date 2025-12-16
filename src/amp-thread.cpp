@@ -23,16 +23,11 @@
 #include "kc1fsz-tools/fixedqueue.h"
 #include "kc1fsz-tools/NetUtils.h"
 
-//#include "sound-map.h"
-
 #include "LineIAX2.h"
 #include "LineRadioWin.h"
 #include "MessageBus.h"
-//#include "StatsTask.h"
-//#include "ManagerTask.h"
 #include "EventLoop.h"
-#include "AdaptorOut.h"
-#include "AdaptorIn.h"
+#include "Bridge.h"
 
 #include "amp-thread.h"
 
@@ -81,29 +76,6 @@ public:
     }
 };
 
-class MessageBus2 : public MessageConsumer {
-public:
-
-    MessageBus2(Log& log) : _log(log) { }
-
-    virtual void consume(const Message& msg) {
-        if (msg.getType() == Message::Type::SIGNAL && 
-            msg.getFormat() == Message::SignalType::CALL_START) {
-            PayloadCallStart payload;
-            assert(msg.size() == sizeof(payload));
-            memcpy(&payload, msg.raw(), sizeof(payload));
-            _log.info("Call started %d codec %X", msg.getSourceCallId(), payload.codec);
-            adIn->setCodec(payload.codec);
-            adOut->setCodec(payload.codec);
-        }
-        adIn->consume(msg);
-    }
-
-    Log& _log;
-    AdaptorIn* adIn = 0;
-    AdaptorOut* adOut = 0;
-};
-
 // #### TODO: Pull this out of the global scope
 threadsafequeue<Request> MsgQueue;
 
@@ -136,75 +108,67 @@ private:
     LineRadioWin& _radio;
 };
 
-/*
-Topology:
+// A simple MessageBus for routing messages out of the bridge
+class Router : public MessageConsumer {
+public:
 
-iax0->mb0->adaptor0->radio0
-radio0->adaptor1->iax0
-*/
+    Router(MessageConsumer& con0, unsigned line0, MessageConsumer& con1, unsigned line1)
+    :   _con0(con0), _line0(line0), _con1(con1), _line1(line1) { }
+
+    void consume(const Message& msg) {
+        if (msg.getDestBusId() == _line0) 
+            _con0.consume(msg);
+        else if (msg.getDestBusId() == _line1) 
+            _con1.consume(msg);
+        else 
+            assert(false);
+    }
+
+private:
+
+    MessageConsumer& _con0;
+    unsigned _line0;
+    MessageConsumer& _con1;
+    unsigned _line1;
+};
+
 void amp_thread(void* ud) {
 
     Log& log = *((Log*)ud);
     log.info("amp_thread start");
     StdClock clock;
 
-    //StatsTask statsTask(log, clock);
-    //statsTask.configure("http://stats.allstarlink.org/uhandler", getenv("AMP_NODE0_NUMBER"));
+    amp::Bridge bridge10(log, clock);
+    
+    LineRadioWin radio2(log, clock, bridge10, 2, 1, 10, 1);
 
-    // This goes from IAX2->USB
-    MessageBus2 mb0(log);
-    AdaptorIn adaptor0;
-    // This goes from USB->IAX2
-    AdaptorOut adaptor1;
+    CallValidatorStd val;
+    LocalRegistryStd locReg;
+    LineIAX2 iax2Channel1(log, clock, 1, bridge10, &val, &locReg);
+    //iax2Channel1.setTrace(true);
 
-    /*
-    // Resolve the sound card/HID name
-    char alsaCardNumber[16];
-    char hidDeviceName[32];
-    int rc2 = querySoundMap(getenv("AMP_NODE0_USBSOUND"), 
-        hidDeviceName, 32, alsaCardNumber, 16, 0, 0);
-    if (rc2 < 0) {
-        log.error("Unable to resolve USB device");
-        return -1;
+    Router router(iax2Channel1, 1, radio2, 2);
+    bridge10.setSink(&router);
+
+    QueueWatcher watcher(iax2Channel1, radio2);
+
+    // #### TODO: UNDERSTAND THIS, POSSIBLE RACE CONDITION
+    Sleep(500);
+
+    int rc = iax2Channel1.open(AF_INET, atoi(getenv("AMP_IAX_PORT")), "radio");
+    if (rc < 0) {
+        log.error("Failed to open IAX2 connection %d", rc);
+        return;
     }
-    char alsaDeviceName[32];
-    snprintf(alsaDeviceName, 32, "plughw:%s", alsaCardNumber);
-
-    log.info("USB %s mapped to %s, %s", getenv("AMP_NODE0_USBSOUND"),
-        hidDeviceName, alsaDeviceName);
-    */
-
-    LineRadioWin radio0(log, clock, adaptor1, 2, 1, 3, Message::BROADCAST);
-    int rc = radio0.open("","");
+    
+    rc = radio2.open("","");
     if (rc < 0) {
         log.error("Failed to open radio connection %d", rc);
         return;
     }
 
-    CallValidatorStd val;
-    LocalRegistryStd locReg;
-    LineIAX2 iax2Channel0(log, clock, 1, mb0, &val, &locReg);
-    //iax2Channel0.setTrace(true);
-
-    QueueWatcher watcher0(iax2Channel0, radio0);
-
-    // Routes
-    mb0.adIn = &adaptor0;
-    mb0.adOut = &adaptor1;
-    adaptor0.setSink([&radio0](const Message& msg) { radio0.consume(msg); });
-    adaptor1.setSink([&iax2Channel0](const Message& msg) { iax2Channel0.consume(msg); });
-
-    // The listening node
-    iax2Channel0.open(AF_INET, atoi(getenv("AMP_IAX_PORT")), "radio");
-    
     // Main loop        
-    const unsigned task2Count = 3;
-    Runnable2* tasks2[task2Count] = { &radio0, &iax2Channel0, &watcher0 };
-
-    EventLoop::run(log, clock, 0, 0, tasks2, task2Count, 0, true);
-
-    iax2Channel0.close();
-    //radio0.close();
-
-    log.info("Done");
+    const unsigned taskCount = 4;
+    Runnable2* tasks[taskCount] = { &radio2, &iax2Channel1, &bridge10, &watcher };
+    EventLoop::run(log, clock, 0, 0, tasks, taskCount, 0, true);
 }

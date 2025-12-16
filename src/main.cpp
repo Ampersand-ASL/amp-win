@@ -75,13 +75,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int
     // Get the Service thread running
     _beginthread(service_thread, 0, (void*)&log);
 
-    MainWindow w(hInstance, log, "61057", MsgQueue);
+    //MainWindow w(hInstance, log, "61057", MsgQueue);
+    MainWindow w(hInstance, log, "672730", MsgQueue);
     w.show(nCmdShow);
 
-    // Run the message loop.
+    log.info("Main loop");
+
+    // Run the Windows message loop.
     MSG msg = { };
-    while (GetMessage(&msg, NULL, 0, 0))
-    {
+    while (GetMessage(&msg, NULL, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }

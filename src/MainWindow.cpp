@@ -92,7 +92,8 @@ MainWindow::MainWindow(HINSTANCE hInstance, Log& log, const char* localNodeNumbe
     _hEditNode = CreateWindowEx(
         WS_EX_CLIENTEDGE, // Extended styles, gives a sunken border look
         L"EDIT",           // Predefined window class name for edit controls (L for Unicode)
-        L"61057",               // Initial text (can be NULL or empty string L"")
+        //L"61057",
+        L"55553",
         WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL, // Window styles
         10, 40,           // X, Y position
         150, 25,          // Width, Height

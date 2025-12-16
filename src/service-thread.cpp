@@ -37,6 +37,8 @@ void service_thread(void* ud) {
         getenv("AMP_NODE0_PASSWORD"), atoi(getenv("AMP_IAX_PORT")));
 
     // #### TODO: STATS
+    //StatsTask statsTask(log, clock);
+    //statsTask.configure("http://stats.allstarlink.org/uhandler", getenv("AMP_NODE0_NUMBER"));
 
     // Main loop        
     const unsigned task2Count = 1;
