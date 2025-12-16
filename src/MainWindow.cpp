@@ -130,7 +130,7 @@ MainWindow::MainWindow(HINSTANCE hInstance, Log& log, const char* localNodeNumbe
     _hPttButton = CreateWindow(
         TEXT("button"),   // Predefined class name
         TEXT("PTT (Currently Unkeyed)"), // Button text
-        WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, // Styles
+        WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON | BS_OWNERDRAW, // Styles
         10, 80,           // X, Y position
         200, 25,           // Width, Height
         _hwnd,             // Parent window handle
@@ -220,6 +220,49 @@ LRESULT MainWindow::_msg(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
             FillRect(hdc, &ps.rcPaint, (HBRUSH) (COLOR_WINDOW+1));
             EndPaint(hwnd, &ps);
             return 0;
+        }
+
+        case WM_DRAWITEM:
+        {
+            LPDRAWITEMSTRUCT pDIS = (LPDRAWITEMSTRUCT)lParam;
+
+            // Special drawing for PTT button
+            if (pDIS->hwndItem == _hPttButton) // Check if it's our specific button
+            {
+                // Your custom drawing code goes here
+                // Use pDIS->hDC, pDIS->rcItem, pDIS->itemState
+
+                const wchar_t* text;
+                HBRUSH keyedBrush;
+                if (_pttToggle) {
+                   text = L"PTT (Keyed)";
+                   keyedBrush = CreateSolidBrush(RGB(150, 150, 255));
+                } else {
+                   text = L"PTT (Currently Unkeyed)";
+                   keyedBrush = CreateSolidBrush(RGB(0, 250, 0));
+                }
+
+                // Example: Draw a simple colored rectangle based on state
+                HBRUSH hBrush;
+                if (pDIS->itemState & ODS_SELECTED) {
+                    hBrush = CreateSolidBrush(RGB(150, 150, 255));
+                } else {
+                    hBrush = keyedBrush;
+                }
+                FillRect(pDIS->hDC, &pDIS->rcItem, hBrush);
+                DeleteObject(hBrush);
+
+                // Draw text
+                SetBkMode(pDIS->hDC, TRANSPARENT);
+                DrawText(pDIS->hDC, text, -1, &pDIS->rcItem, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+                SetBkMode(pDIS->hDC, OPAQUE);
+
+                // Draw focus rectangle if needed
+                if (pDIS->itemState & ODS_FOCUS) {
+                    DrawFocusRect(pDIS->hDC, &pDIS->rcItem);
+                }
+                return TRUE; // Handled the message
+            }
         }
     }
     // By default

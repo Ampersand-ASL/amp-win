@@ -52,14 +52,16 @@ private:
     static LRESULT CALLBACK _windProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     LRESULT _msg(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
+
     Log& _log;
     HWND _hwnd;
     HWND _hEditNode;
-    HWND _hPttButton;
     HBRUSH _whiteBrush;
     std::string _localNodeNumber;
     threadsafequeue<Request>& _msgQueue;
     bool _pttToggle = false;
+
+    HWND _hPttButton;
 };
 
 }
