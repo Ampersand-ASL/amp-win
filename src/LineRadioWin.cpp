@@ -86,7 +86,7 @@ int LineRadioWin::open(const char* deviceName, const char* hidName) {
     payload.bypassJitterBuffer = true;
     payload.startMs = _clock.time();
     Message msg(Message::Type::SIGNAL, Message::SignalType::CALL_START, 
-        sizeof(payload), (const uint8_t*)&payload, 0, _clock.timeUs());
+        sizeof(payload), (const uint8_t*)&payload, 0, _clock.time());
     msg.setSource(_busId, _callId);
     msg.setDest(_destBusId, _destCallId);
     _captureConsumer.consume(msg);
@@ -95,7 +95,7 @@ int LineRadioWin::open(const char* deviceName, const char* hidName) {
 
 void LineRadioWin::close() {
     Message msg(Message::Type::SIGNAL, Message::SignalType::CALL_END, 
-        0, 0, 0, _clock.timeUs());
+        0, 0, 0, _clock.time());
     msg.setSource(_busId, _callId);
     msg.setDest(_destBusId, _destCallId);
     _captureConsumer.consume(msg);
@@ -122,11 +122,11 @@ bool LineRadioWin::run2() {
 
         assert(frame.size() == BLOCK_SIZE_48K);
 
-        uint64_t now = _clock.timeUs();
+        uint32_t nowMs = _clock.time();
         if (_captureCount == 0)
-            _captureStartUs = now;
+            _captureStartMs = nowMs;
         // #### TODO: WHAT IS THIS RELATIVE TO?
-        uint64_t idealNow = _captureStartUs + (_captureCount * BLOCK_PERIOD_MS * 1000);
+        uint32_t idealNowMs = _captureStartMs + (_captureCount * BLOCK_PERIOD_MS);
         _captureCount++;
 
         // Transition detect, the beginning of a capture "run"
@@ -134,9 +134,9 @@ bool LineRadioWin::run2() {
             _capturing = true;
             // Force a synchronization of the actual system clock and 
             // the timestamps that will be put on the generated frames.
-            _captureStartUs = now;
+            _captureStartMs = nowMs;
             _captureCount = 0;
-            idealNow = now;
+            idealNowMs = nowMs;
             _captureStart();
         }
 
@@ -146,7 +146,7 @@ bool LineRadioWin::run2() {
         _analyzeCapturedAudio(frame.data(), BLOCK_SIZE_48K);
 
         // Here is where the actual processing of the new block happens
-        _processCapturedAudio(frame.data(), BLOCK_SIZE_48K, now, idealNow);
+        _processCapturedAudio(frame.data(), BLOCK_SIZE_48K, nowMs, idealNowMs);
 
         frameCount++;
     }
@@ -154,7 +154,7 @@ bool LineRadioWin::run2() {
     return frameCount > 0;
 }
 
-void LineRadioWin::audioRateTick() {
+void LineRadioWin::audioRateTick(uint32_t tickMs) {
      _checkTimeouts();
 }
 

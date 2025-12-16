@@ -56,6 +56,9 @@ public:
         }
     }
 
+    // #### TODO: REMOVE
+    virtual void audioRateTick(uint32_t tickTimeMs) { }
+
 private:
 
     LineRadioWin& _radio;

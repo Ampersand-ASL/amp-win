@@ -48,7 +48,11 @@ public:
     // ----- Runnable ---------------------------------------------------------
 
     bool run2();
-    void audioRateTick();
+
+    /**
+     * Used for checking timeouts, not time-critical in this class.
+     */
+    void audioRateTick(uint32_t tickMs);
 
 private:
 
@@ -75,7 +79,7 @@ private:
 
     HANDLE _captureThreadH = 0;
     bool _capturing = false;
-    uint64_t _captureStartUs = 0;
+    uint32_t _captureStartMs = 0;
     uint32_t _captureCount = 0;
     uint32_t _lastCapturedFrameMs = 0;
     // If we go silent for this amount of time the capture is assumed to have ended. 

@@ -102,6 +102,9 @@ public:
         }
     }
 
+    // #### TODO: REMOVE
+    virtual void audioRateTick(uint32_t tickTimeMs) { }
+
 private:
 
     LineIAX2& _iax;
@@ -137,6 +140,8 @@ void amp_thread(void* ud) {
     Log& log = *((Log*)ud);
     log.info("amp_thread start");
     StdClock clock;
+
+    cout << "TIME " << clock.time() << endl;
 
     amp::Bridge bridge10(log, clock);
     
