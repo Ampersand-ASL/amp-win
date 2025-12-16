@@ -118,8 +118,6 @@ void amp_thread(void* ud) {
     log.info("amp_thread start");
     StdClock clock;
 
-    cout << "TIME " << clock.time() << endl;
-
     amp::Bridge bridge10(log, clock);
     
     LineRadioWin radio2(log, clock, bridge10, 2, 1, 10, 1);
