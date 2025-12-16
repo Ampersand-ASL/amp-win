@@ -79,14 +79,33 @@ LineRadioWin::~LineRadioWin() {
 }
 
 int LineRadioWin::open(const char* deviceName, const char* hidName) {    
+    // Generate the same kind of call start message that would
+    // come from the IAX2Line after a new connection.
+    PayloadCallStart payload;
+    payload.codec = CODECType::IAX2_CODEC_SLIN_48K;
+    payload.bypassJitterBuffer = true;
+    payload.startMs = _clock.time();
+    Message msg(Message::Type::SIGNAL, Message::SignalType::CALL_START, 
+        sizeof(payload), (const uint8_t*)&payload, 0, _clock.timeUs());
+    msg.setSource(_busId, _callId);
+    msg.setDest(_destBusId, _destCallId);
+    _captureConsumer.consume(msg);
     return 0;
 }
 
 void LineRadioWin::close() {
+    Message msg(Message::Type::SIGNAL, Message::SignalType::CALL_END, 
+        0, 0, 0, _clock.timeUs());
+    msg.setSource(_busId, _callId);
+    msg.setDest(_destBusId, _destCallId);
+    _captureConsumer.consume(msg);
 }
     
 void LineRadioWin::setCos(bool cos) {
+    // This is to stop the audio flow
     _captureEnabled.store(cos);
+    // Call base class, this will include sending an UNKEY signal
+    _setCosStatus(cos);
 }
 
 /**
@@ -176,7 +195,7 @@ void LineRadioWin::_play(const Message& msg) {
     // Convert the SLIN_48K LE into 16-bit PCM audio
     int16_t pcm48k_2[BLOCK_SIZE_48K];
     Transcoder_SLIN_48K transcoder;
-    transcoder.decode(msg.raw(), msg.size(), pcm48k_2, BLOCK_SIZE_48K);
+    transcoder.decode(msg.body(), msg.size(), pcm48k_2, BLOCK_SIZE_48K);
 
     // Here is where statistical analysis and/or local recording can take 
     // place for diagnostic purposes.
@@ -188,7 +207,6 @@ void LineRadioWin::_play(const Message& msg) {
     _lastPlayedFrameMs = _clock.time();
     _playing = true;
 }
-
 
 // ===== PLAY THREAD ==========================================================
 

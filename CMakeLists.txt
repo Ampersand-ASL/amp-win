@@ -36,15 +36,13 @@ add_executable(main
   amp-core/src/IAX2Util.cpp
   amp-core/src/MessageBus.cpp
   amp-core/src/RegisterTask.cpp
-#  amp-core/src/StatsTask.cpp
-#  amp-core/src/ManagerTask.cpp
   amp-core/src/RetransmissionBufferStd.cpp
   amp-core/src/Transcoder_G711_ULAW.cpp
   amp-core/src/Transcoder_SLIN_48K.cpp
   amp-core/src/Transcoder_SLIN.cpp
   amp-core/src/Transcoder_SLIN_16K.cpp
-  amp-core/src/AdaptorIn.cpp
-  amp-core/src/AdaptorOut.cpp
+  amp-core/src/BridgeIn.cpp
+  amp-core/src/BridgeOut.cpp
   amp-core/src/Resampler.cpp
   kc1fsz-tools-cpp/src/Common.cpp
   kc1fsz-tools-cpp/src/NetUtils.cpp
@@ -57,7 +55,6 @@ add_executable(main
   itu-g711-codec/src/codec.cpp
   itu-g711-codec/src/Plc.cpp
   cmsis-dsp-mock/src/main.cpp
-#  amp-core/sound-map/src/sound-map.c
 )
 
 target_include_directories(main PRIVATE src)
@@ -70,6 +67,50 @@ target_include_directories(main PRIVATE amp-core/include)
 #target_include_directories(main PRIVATE sound-map/include)
 target_link_libraries(main -lws2_32 -lcurl -lole32)
 target_link_options(main PRIVATE -mwindows)
+
+# ----- Local Parrot ------------------------------------------------------
+
+add_executable(main-local-parrot
+  src/demos/main-local-parrot.cpp
+  src/demos/amp-thread-local-parrot.cpp
+  src/MainWindow.cpp
+  src/LineRadioWin.cpp
+  amp-core/src/EventLoop.cpp
+  amp-core/src/Message.cpp
+  amp-core/src/Line.cpp
+  amp-core/src/LineRadio.cpp
+  amp-core/src/IAX2Util.cpp
+  amp-core/src/MessageBus.cpp
+#  amp-core/src/StatsTask.cpp
+#  amp-core/src/ManagerTask.cpp
+  amp-core/src/Transcoder_G711_ULAW.cpp
+  amp-core/src/Transcoder_SLIN_48K.cpp
+  amp-core/src/Transcoder_SLIN.cpp
+  amp-core/src/Transcoder_SLIN_16K.cpp
+  amp-core/src/Bridge.cpp
+  amp-core/src/BridgeCall.cpp
+  amp-core/src/BridgeIn.cpp
+  amp-core/src/BridgeOut.cpp
+  amp-core/src/Resampler.cpp
+  kc1fsz-tools-cpp/src/Common.cpp
+  kc1fsz-tools-cpp/src/StdPollTimer.cpp
+  kc1fsz-tools-cpp/src/linux/StdClock.cpp
+  kc1fsz-tools-cpp/src/win32/Win32MTLog.cpp
+  kc1fsz-tools-cpp/src/DTMFDetector2.cpp
+  itu-g711-codec/src/codec.cpp
+  itu-g711-codec/src/Plc.cpp
+  cmsis-dsp-mock/src/main.cpp
+)
+
+target_include_directories(main-local-parrot PRIVATE src)
+target_include_directories(main-local-parrot PRIVATE include)
+target_include_directories(main-local-parrot PRIVATE kc1fsz-tools-cpp/include)
+target_include_directories(main-local-parrot PRIVATE itu-g711-codec/src)
+target_include_directories(main-local-parrot PRIVATE cmsis-dsp-mock/include)
+target_include_directories(main-local-parrot PRIVATE amp-core/src)
+target_include_directories(main-local-parrot PRIVATE amp-core/include)
+target_link_libraries(main-local-parrot -lws2_32 -lole32)
+target_link_options(main-local-parrot PRIVATE -mwindows)
 
 # ----- hello-w32 ----------------------------------------------------
 

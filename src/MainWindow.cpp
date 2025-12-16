@@ -193,14 +193,14 @@ LRESULT MainWindow::_msg(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
                     req.cmd = "ptton";
                     _msgQueue.push(req);
                     _pttToggle = true;
-                    _log.info("PTT on");
+                    //_log.info("PTT on");
                     SendMessage(_hPttButton, WM_SETTEXT, 0, (LPARAM)TEXT("PTT (Currently Keyed)"));
                 } else {
                     Request req;
                     req.cmd = "pttoff";
                     _msgQueue.push(req);
                     _pttToggle = false;
-                    _log.info("PTT off");
+                    //_log.info("PTT off");
                     SendMessage(_hPttButton, WM_SETTEXT, 0, (LPARAM)TEXT("PTT (Currently Unkeyed)"));
                 }
             }
