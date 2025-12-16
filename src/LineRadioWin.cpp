@@ -79,26 +79,12 @@ LineRadioWin::~LineRadioWin() {
 }
 
 int LineRadioWin::open(const char* deviceName, const char* hidName) {    
-    // Generate the same kind of call start message that would
-    // come from the IAX2Line after a new connection.
-    PayloadCallStart payload;
-    payload.codec = CODECType::IAX2_CODEC_SLIN_48K;
-    payload.bypassJitterBuffer = true;
-    payload.startMs = _clock.time();
-    Message msg(Message::Type::SIGNAL, Message::SignalType::CALL_START, 
-        sizeof(payload), (const uint8_t*)&payload, 0, _clock.time());
-    msg.setSource(_busId, _callId);
-    msg.setDest(_destBusId, _destCallId);
-    _captureConsumer.consume(msg);
+    _open();
     return 0;
 }
 
 void LineRadioWin::close() {
-    Message msg(Message::Type::SIGNAL, Message::SignalType::CALL_END, 
-        0, 0, 0, _clock.time());
-    msg.setSource(_busId, _callId);
-    msg.setDest(_destBusId, _destCallId);
-    _captureConsumer.consume(msg);
+    _close();
 }
     
 void LineRadioWin::setCos(bool cos) {

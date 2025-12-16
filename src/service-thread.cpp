@@ -20,7 +20,6 @@
 #include "kc1fsz-tools/linux/StdClock.h"
 
 #include "RegisterTask.h"
-//#include "StatsTask.h"
 #include "EventLoop.h"
 
 using namespace std;
