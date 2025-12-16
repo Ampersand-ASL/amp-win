@@ -28,6 +28,7 @@
 #include "MessageBus.h"
 #include "EventLoop.h"
 #include "Bridge.h"
+#include "TwoLineRouter.h"
 
 #include "amp-thread.h"
 
@@ -111,30 +112,6 @@ private:
     LineRadioWin& _radio;
 };
 
-// A simple MessageBus for routing messages out of the bridge
-class Router : public MessageConsumer {
-public:
-
-    Router(MessageConsumer& con0, unsigned line0, MessageConsumer& con1, unsigned line1)
-    :   _con0(con0), _line0(line0), _con1(con1), _line1(line1) { }
-
-    void consume(const Message& msg) {
-        if (msg.getDestBusId() == _line0) 
-            _con0.consume(msg);
-        else if (msg.getDestBusId() == _line1) 
-            _con1.consume(msg);
-        else 
-            assert(false);
-    }
-
-private:
-
-    MessageConsumer& _con0;
-    unsigned _line0;
-    MessageConsumer& _con1;
-    unsigned _line1;
-};
-
 void amp_thread(void* ud) {
 
     Log& log = *((Log*)ud);
@@ -152,7 +129,7 @@ void amp_thread(void* ud) {
     LineIAX2 iax2Channel1(log, clock, 1, bridge10, &val, &locReg);
     //iax2Channel1.setTrace(true);
 
-    Router router(iax2Channel1, 1, radio2, 2);
+    TwoLineRouter router(iax2Channel1, 1, radio2, 2);
     bridge10.setSink(&router);
 
     QueueWatcher watcher(iax2Channel1, radio2);
