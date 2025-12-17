@@ -20,6 +20,7 @@
 #include "kc1fsz-tools/linux/StdClock.h"
 
 #include "RegisterTask.h"
+#include "StatsTask.h"
 #include "EventLoop.h"
 
 using namespace std;
@@ -35,14 +36,12 @@ void service_thread(void* ud) {
     registerTask.configure(getenv("AMP_ASL_REG_URL"), getenv("AMP_NODE0_NUMBER"), 
         getenv("AMP_NODE0_PASSWORD"), atoi(getenv("AMP_IAX_PORT")));
 
-    // #### TODO: STATS
-    //StatsTask statsTask(log, clock);
-    //statsTask.configure("http://stats.allstarlink.org/uhandler", getenv("AMP_NODE0_NUMBER"));
+    StatsTask statsTask(log, clock, "1.0.0");
+    statsTask.configure(getenv("AMP_ASL_STAT_URL"), getenv("AMP_NODE0_NUMBER"));
 
     // Main loop        
-    const unsigned task2Count = 1;
-    Runnable2* tasks2[task2Count] = { &registerTask };
-    EventLoop::run(log, clock, 0, 0, tasks2, task2Count);
+    Runnable2* tasks2[] = { &registerTask, &statsTask };
+    EventLoop::run(log, clock, 0, 0, tasks2, std::size(tasks2));
 
     // #### TODO: NEED A CLEAN WAY TO EXIT THIS THREAD
 }

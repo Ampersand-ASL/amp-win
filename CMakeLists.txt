@@ -35,6 +35,7 @@ add_executable(main
   amp-core/src/IAX2FrameFull.cpp
   amp-core/src/IAX2Util.cpp
   amp-core/src/RegisterTask.cpp
+  amp-core/src/StatsTask.cpp
   amp-core/src/RetransmissionBufferStd.cpp
   amp-core/src/Transcoder_G711_ULAW.cpp
   amp-core/src/Transcoder_SLIN_48K.cpp
@@ -81,7 +82,6 @@ add_executable(main-local-parrot
   amp-core/src/Line.cpp
   amp-core/src/LineRadio.cpp
   amp-core/src/IAX2Util.cpp
-  amp-core/src/MessageBus.cpp
   amp-core/src/Transcoder_G711_ULAW.cpp
   amp-core/src/Transcoder_SLIN_48K.cpp
   amp-core/src/Transcoder_SLIN_16K.cpp

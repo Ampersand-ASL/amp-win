@@ -25,9 +25,9 @@
 
 #include "LineIAX2.h"
 #include "LineRadioWin.h"
-#include "MessageBus.h"
 #include "EventLoop.h"
 #include "Bridge.h"
+#include "BridgeCall.h"
 
 #include "demos/amp-thread-local-parrot.h"
 
@@ -70,7 +70,7 @@ void amp_thread(void* ud) {
     log.info("amp_thread start");
     StdClock clock;
 
-    amp::Bridge bridge10(log, clock);
+    amp::Bridge bridge10(log, clock, amp::BridgeCall::Mode::PARROT);
 
     LineRadioWin radio0(log, clock, bridge10, 2, 1, 10, 1);
     bridge10.setSink(&radio0);
@@ -79,7 +79,7 @@ void amp_thread(void* ud) {
 
     log.info("Opening radio connection");
     
-    int rc = radio0.open("","");
+    int rc = radio0.open("","", false);
     if (rc < 0) {
         log.error("Failed to open radio connection %d", rc);
         return;

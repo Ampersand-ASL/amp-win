@@ -25,7 +25,6 @@
 
 #include "LineIAX2.h"
 #include "LineRadioWin.h"
-#include "MessageBus.h"
 #include "EventLoop.h"
 #include "Bridge.h"
 #include "TwoLineRouter.h"
@@ -118,7 +117,9 @@ void amp_thread(void* ud) {
     log.info("amp_thread start");
     StdClock clock;
 
-    amp::Bridge bridge10(log, clock);
+    log.info("Time %u", clock.time());
+
+    amp::Bridge bridge10(log, clock, amp::BridgeCall::Mode::NORMAL);
     
     LineRadioWin radio2(log, clock, bridge10, 2, 1, 10, 1);
 
@@ -150,5 +151,5 @@ void amp_thread(void* ud) {
     // Main loop        
     const unsigned taskCount = 4;
     Runnable2* tasks[taskCount] = { &radio2, &iax2Channel1, &bridge10, &watcher };
-    EventLoop::run(log, clock, 0, 0, tasks, taskCount, 0, true);
+    EventLoop::run(log, clock, 0, 0, tasks, taskCount, 0, false);
 }

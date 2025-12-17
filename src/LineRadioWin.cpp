@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-// NOTE: There are no sockets here, but we do this to avoid a compiler
+
+ // NOTE: There are no sockets here, but we do this to avoid a compiler
 // warning: "Include winsock2 before windows.h"
 #include <winsock2.h>
 #include <mmdeviceapi.h>
@@ -39,21 +40,24 @@ DEVELOPER NOTES
 ---------------
 
 I've spent too many hours of my life chasing deadlocks, non-reproducible bugs, 
-and other random behaviors caused by subtle mistakes in MT programs. My advice:
-JUST DON'T DO IT. There are very few cases where multi-threading is really needed,
-and the downside of complexity and potential for defects usually outweighs the 
-upside. MY IMPORTANT RULE OF THUMB: When forced into MT programming, "shared"
-objects should be strictly avoided. The threads should only interact via a few 
-(thread-safe) message queues. 
+and other random behaviors caused by subtle mistakes in multithreaded programs. 
+
+My advice: JUST DON'T DO IT. 
+
+There are very few cases where multi-threading is really needed, and the downside 
+of complexity and potential for defects usually outweighs the upside. MY IMPORTANT 
+RULE OF THUMB: When forced into MT programming, "shared" objects should be strictly 
+avoided. The threads should only interact via a few (thread-safe) message queues. 
 
 In This Case
 ------------
 
 The code below does something that I generally try hard to avoid: multi-threaded
 programming. In this case, it is unavoidable given that the Windows WASAPI audio
-API doesn't provide an eventing model.
+API doesn't provide a asynchronous eventing model.
 
 There are two threads:
+
 * One for dealing with outbound (playing) audio. The _playQueue is shared between
 the "main" thread and the _playThread.
 * One for dealing with inbound (capturing) audio. The _captureQueue is shared 
@@ -78,8 +82,8 @@ LineRadioWin::~LineRadioWin() {
     WaitForSingleObject(_captureThreadH, INFINITE);
 }
 
-int LineRadioWin::open(const char* deviceName, const char* hidName) {    
-    _open();
+int LineRadioWin::open(const char* deviceName, const char* hidName, bool echo) {    
+    _open(echo);
     return 0;
 }
 
@@ -237,7 +241,7 @@ unsigned LineRadioWin::_playThread() {
     // before audio can be heard.
 
     // This is hundred nanoseconds
-    const int64_t REFTIMES_PER_SEC = 5000000; 
+    const int64_t REFTIMES_PER_SEC = 2500000; 
     const int64_t bufferSizeUs = REFTIMES_PER_SEC / 10;
     const int64_t bufferSizeMs = bufferSizeUs / 1000;
     const REFERENCE_TIME requestedSoundBufferDuration = REFTIMES_PER_SEC;
