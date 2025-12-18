@@ -144,58 +144,14 @@ bool LineRadioWin::run2() {
     return frameCount > 0;
 }
 
-void LineRadioWin::audioRateTick(uint32_t tickMs) {
-     _checkTimeouts();
-}
-
-// #### TODO: CONSIDER CONSOLIDATING THIS PART TO LineRadio
-void LineRadioWin::_checkTimeouts() {
-
-    // Detect transitions from audio to silence
-    if (_playing &&
-        _clock.isPast(_lastPlayedFrameMs + _playSilenceIntervalMs)) {
-        _playing = false;
-        _playEnd();
-    }
-
-    if (_capturing &&
-        _clock.isPast(_lastCapturedFrameMs + _captureSilenceIntervalMs)) {
-        _capturing = false;
-        _captureEnd();
-    }
-}
-
 // ===== Play Related =========================================================
 
-void LineRadioWin::consume(const Message& frame) {
-    if (frame.getType() == Message::Type::AUDIO)
-        _play(frame);
-}
+void LineRadioWin::_playPCM48k(int16_t* pcm48k_2, unsigned blockSize) {  
 
-void LineRadioWin::_play(const Message& msg) {  
-
-    // Detect transitions from silence to playing
-    if (!_playing) {
-        _playStart();
-    }
-
-    assert(msg.size() == BLOCK_SIZE_48K * 2);
-    assert(msg.getFormat() == CODECType::IAX2_CODEC_SLIN_48K);
-
-    // Convert the SLIN_48K LE into 16-bit PCM audio
-    int16_t pcm48k_2[BLOCK_SIZE_48K];
-    Transcoder_SLIN_48K transcoder;
-    transcoder.decode(msg.body(), msg.size(), pcm48k_2, BLOCK_SIZE_48K);
-
-    // Here is where statistical analysis and/or local recording can take 
-    // place for diagnostic purposes.
-    _analyzePlayedAudio(pcm48k_2, BLOCK_SIZE_48K);
+    assert(blockSize == BLOCK_SIZE_48K);
 
     // A thread-safe push of the audio onto the play thread
     _playQueueMTSafe.push(PCM16Frame(pcm48k_2, BLOCK_SIZE_48K));
-
-    _lastPlayedFrameMs = _clock.time();
-    _playing = true;
 }
 
 // ===== PLAY THREAD ==========================================================

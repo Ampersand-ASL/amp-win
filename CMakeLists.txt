@@ -98,6 +98,11 @@ add_executable(main-local-parrot
   itu-g711-codec/src/codec.cpp
   itu-g711-codec/src/Plc.cpp
   cmsis-dsp-mock/src/main.cpp
+  kc1fsz-sdrc/sw/src/TestToneGenerator.cpp
+  kc1fsz-sdrc/sw/src/IDToneGenerator.cpp
+  kc1fsz-sdrc/sw/src/CourtesyToneGenerator.cpp
+  kc1fsz-sdrc/sw/src/Tx.cpp
+  kc1fsz-sdrc/sw/src/TxControl.cpp
 )
 
 target_include_directories(main-local-parrot PRIVATE src)
@@ -107,6 +112,8 @@ target_include_directories(main-local-parrot PRIVATE itu-g711-codec/src)
 target_include_directories(main-local-parrot PRIVATE cmsis-dsp-mock/include)
 target_include_directories(main-local-parrot PRIVATE amp-core/src)
 target_include_directories(main-local-parrot PRIVATE amp-core/include)
+target_include_directories(main-local-parrot PRIVATE kc1fsz-sdrc/sw/include)
+target_include_directories(main-local-parrot PRIVATE kc1fsz-sdrc/sw/src)
 target_link_libraries(main-local-parrot -lws2_32 -lole32)
 target_link_options(main-local-parrot PRIVATE -mwindows)
 

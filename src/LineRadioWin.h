@@ -41,18 +41,16 @@ public:
 
     void setCos(bool cos);
 
-    // ----- From MessageConsumer ---------------------------------------------
-
-    void consume(const Message& frame);
-
     // ----- Runnable ---------------------------------------------------------
 
     bool run2();
 
+protected:
+
     /**
-     * Used for checking timeouts, not time-critical in this class.
+     * This function is called to do the actual playing of the 48K PCM.
      */
-    void audioRateTick(uint32_t tickMs);
+    void _playPCM48k(int16_t* pcm48k_2, unsigned blockSize);
 
 private:
 
@@ -61,29 +59,16 @@ private:
     static unsigned _captureThread(void*);
     unsigned _captureThread();
 
-    void _play(const Message& msg);
-    void _checkTimeouts();
-
     std::atomic<bool> _run;
     std::atomic<bool> _captureEnabled;
 
     HANDLE _playThreadH = 0;
-    bool _playing = false;
-    // ### TODO: MOVE UP TO BASE
-    uint32_t _lastPlayedFrameMs = 0;
-    // If we go silent for this amount of time the playback is assumed
-    // to have ended. 
-    uint32_t _playSilenceIntervalMs = 20 * 4;
     // This queue passes play audio out to the audio thread
     threadsafequeue<PCM16Frame> _playQueueMTSafe;
 
     HANDLE _captureThreadH = 0;
-    bool _capturing = false;
     uint32_t _captureStartMs = 0;
     uint32_t _captureCount = 0;
-    uint32_t _lastCapturedFrameMs = 0;
-    // If we go silent for this amount of time the capture is assumed to have ended. 
-    uint32_t _captureSilenceIntervalMs = 20 * 4;
     // This queue passes capture audio out of the audio thread
     threadsafequeue<PCM16Frame> _captureQueueMTSafe;
     static const unsigned MAX_CAPTURE_BUFFER_SIZE = BLOCK_SIZE_48K * 4;

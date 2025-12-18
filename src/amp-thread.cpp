@@ -117,8 +117,6 @@ void amp_thread(void* ud) {
     log.info("amp_thread start");
     StdClock clock;
 
-    log.info("Time %u", clock.time());
-
     amp::Bridge bridge10(log, clock, amp::BridgeCall::Mode::NORMAL);
     
     LineRadioWin radio2(log, clock, bridge10, 2, 1, 10, 1);
