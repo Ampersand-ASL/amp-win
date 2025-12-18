@@ -10,3 +10,6 @@
 [submodule "cmsis-dsp-mock"]
 	path = cmsis-dsp-mock
 	url = https://github.com/brucemack/cmsis-dsp-mock.git
+[submodule "kc1fsz-sdrc"]
+	path = kc1fsz-sdrc
+	url = https://github.com/brucemack/kc1fsz-sdrc.git
