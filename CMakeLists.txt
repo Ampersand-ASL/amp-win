@@ -56,6 +56,21 @@ add_executable(main
   itu-g711-codec/src/codec.cpp
   itu-g711-codec/src/Plc.cpp
   cmsis-dsp-mock/src/main.cpp
+  kc1fsz-sdrc/sw/src/TestToneGenerator.cpp
+  kc1fsz-sdrc/sw/src/IDToneGenerator.cpp
+  kc1fsz-sdrc/sw/src/CourtesyToneGenerator.cpp
+  kc1fsz-sdrc/sw/src/Tx.cpp
+  kc1fsz-sdrc/sw/src/TxControl.cpp
+  ed25519/src/add_scalar.c
+  ed25519/src/ge.c
+  ed25519/src/keypair.c
+  ed25519/src/seed.c
+  ed25519/src/sign.c
+  ed25519/src/fe.c
+  ed25519/src/key_exchange.c
+  ed25519/src/sc.c
+  ed25519/src/sha512.c
+  ed25519/src/verify.c
 )
 
 target_include_directories(main PRIVATE src)
@@ -65,6 +80,9 @@ target_include_directories(main PRIVATE itu-g711-codec/src)
 target_include_directories(main PRIVATE cmsis-dsp-mock/include)
 target_include_directories(main PRIVATE amp-core/src)
 target_include_directories(main PRIVATE amp-core/include)
+target_include_directories(main PRIVATE kc1fsz-sdrc/sw/include)
+target_include_directories(main PRIVATE kc1fsz-sdrc/sw/src)
+target_include_directories(main PRIVATE ed25519/src)
 target_link_libraries(main -lws2_32 -lcurl -lole32)
 target_link_options(main PRIVATE -mwindows)
 # Needed to expand the size of the stack in the MinGW environment

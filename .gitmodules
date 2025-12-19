@@ -13,3 +13,6 @@
 [submodule "kc1fsz-sdrc"]
 	path = kc1fsz-sdrc
 	url = https://github.com/brucemack/kc1fsz-sdrc.git
+[submodule "ed25519"]
+	path = ed25519
+	url = https://github.com/orlp/ed25519.git
