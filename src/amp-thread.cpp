@@ -125,6 +125,8 @@ void amp_thread(void* ud) {
     LocalRegistryStd locReg;
     LineIAX2 iax2Channel1(log, clock, 1, bridge10, &val, &locReg);
     //iax2Channel1.setTrace(true);
+    iax2Channel1.setPrivateKey(getenv("AMP_PRIVATE_KEY"));
+    iax2Channel1.setDNSRoot(getenv("AMP_ASL_DNS_ROOT"));
 
     TwoLineRouter router(iax2Channel1, 1, radio2, 2);
     bridge10.setSink(&router);

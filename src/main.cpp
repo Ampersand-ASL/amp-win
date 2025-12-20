@@ -40,7 +40,9 @@ export AMP_IAX_PORT=4568
 export AMP_IAX_PROTO=IPV4
 export AMP_ASL_REG_URL=https://register.allstarlink.org
 export AMP_ASL_STAT_URL=http://stats.allstarlink.org/uhandler
+export AMP_ASL_DNS_ROOT=allstarlink.org
 export AMP_NODE0_USBSOUND="vendorname:\"C-Media Electronics, Inc.\""
+export AMP_PRIVATE_KEY=95EBE5A75615C97A3272163CC842EAF8EC0F79C3215189A24403ADF3A47E0DEC
 */
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int nCmdShow) {
 
