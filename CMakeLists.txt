@@ -19,7 +19,7 @@ set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 23)
 project(amp-win C CXX ASM)
 
-add_compile_options(-fstack-protector-all -Wall -Wpedantic)
+add_compile_options(-fstack-protector-all -Wall -Wpedantic -g)
 
 add_executable(main
   src/main.cpp
