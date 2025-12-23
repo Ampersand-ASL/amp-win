@@ -48,10 +48,13 @@ void MainWindow::reg(HINSTANCE hInstance) {
 }
 
 MainWindow::MainWindow(HINSTANCE hInstance, Log& log, const char* localNodeNumber,
-    threadsafequeue<Request>& q)
+    threadsafequeue<Message>& q2, 
+    unsigned networkDestLineId, unsigned radioDestLineId)
 :   _log(log),
     _localNodeNumber(localNodeNumber),
-    _msgQueue(q) {
+    _msgQueue2(q2),
+    _networkDestLineId(networkDestLineId),
+    _radioDestLineId(radioDestLineId) {
 
     _whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
 
@@ -178,31 +181,38 @@ LRESULT MainWindow::_msg(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
             int controlID = LOWORD(wParam);
             int messageType = HIWORD(wParam);
             if (controlID == IDC_BUTTON_CONNECT && messageType == BN_CLICKED) {
-                Request req;
-                req.cmd = "connect";
-                req.localNodeNumber = _localNodeNumber;
-                req.targetNodeNumber = getEditText(_hEditNode);
-                _msgQueue.push(req);
+                PayloadConnect req;
+                strcpyLimited(req.localNumber, _localNodeNumber.c_str(), sizeof(req.localNumber));
+                strcpyLimited(req.targetNumber, getEditText(_hEditNode).c_str(), sizeof(req.targetNumber));
+                Message msg(Message::Type::SIGNAL, Message::SignalType::CALL_NODE, 
+                    sizeof(req), (const uint8_t*)&req, 0, 0);
+                msg.setDest(_networkDestLineId, 1);
+                _msgQueue2.push(msg);
             }
             else if (controlID == IDC_BUTTON_DISCONNECTALL && messageType == BN_CLICKED) {
-                Request req;
-                req.cmd = "disconnectall";
-                _msgQueue.push(req);
+                Message msg(Message::Type::SIGNAL, Message::SignalType::DROP_ALL_NODES, 
+                    0, 0, 0, 0);
+                msg.setDest(_networkDestLineId, 1);
+                _msgQueue2.push(msg);
             }
             else if (controlID == IDC_BUTTON_PTT && messageType == BN_CLICKED) {
                 if (!_pttToggle) {
-                    Request req;
-                    req.cmd = "ptton";
-                    _msgQueue.push(req);
+                    
+                    Message msg(Message::Type::SIGNAL, Message::SignalType::COS_ON, 
+                        0, 0, 0, 0);
+                    msg.setDest(_radioDestLineId, 1);
+                    _msgQueue2.push(msg);
+
                     _pttToggle = true;
-                    //_log.info("PTT on");
                     SendMessage(_hPttButton, WM_SETTEXT, 0, (LPARAM)TEXT("PTT (Currently Keyed)"));
                 } else {
-                    Request req;
-                    req.cmd = "pttoff";
-                    _msgQueue.push(req);
+
+                    Message msg(Message::Type::SIGNAL, Message::SignalType::COS_OFF, 
+                        0, 0, 0, 0);
+                    msg.setDest(_radioDestLineId, 1);
+                    _msgQueue2.push(msg);
+
                     _pttToggle = false;
-                    //_log.info("PTT off");
                     SendMessage(_hPttButton, WM_SETTEXT, 0, (LPARAM)TEXT("PTT (Currently Unkeyed)"));
                 }
             }

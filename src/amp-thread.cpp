@@ -27,7 +27,6 @@
 #include "LineRadioWin.h"
 #include "EventLoop.h"
 #include "Bridge.h"
-//#include "TwoLineRouter.h"
 #include "MultiRouter.h"
 
 #include "amp-thread.h"
@@ -78,40 +77,7 @@ public:
 };
 
 // #### TODO: Pull this out of the global scope
-threadsafequeue<Request> MsgQueue;
-threadsafequeue<Message> MsgQueue2;
-
-class QueueWatcher : public Runnable2 {
-public: 
-
-    QueueWatcher(LineIAX2& iax, LineRadioWin& radio) : _iax(iax), _radio(radio) { }
-
-    virtual bool run2() {
-        Request req;
-        if (MsgQueue.try_pop(req)) {
-            if (req.cmd == "connect")
-                _iax.call(req.localNodeNumber.c_str(), req.targetNodeNumber.c_str());
-            else if (req.cmd == "disconnectall")
-                _iax.disconnectAllNonPermanent();
-            else if (req.cmd == "ptton")
-                _radio.setCos(true);
-            else if (req.cmd == "pttoff")
-                _radio.setCos(false);
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
-    // #### TODO: REMOVE
-    virtual void audioRateTick(uint32_t tickTimeMs) { }
-
-private:
-
-    LineIAX2& _iax;
-    LineRadioWin& _radio;
-};
+threadsafequeue<Message> MsgQueueIn;
 
 void amp_thread(void* ud) {
 
@@ -119,7 +85,7 @@ void amp_thread(void* ud) {
     log.info("amp_thread start");
     StdClock clock;
 
-    MultiRouter router(MsgQueue2);
+    MultiRouter router(MsgQueueIn);
 
     amp::Bridge bridge10(log, clock, amp::BridgeCall::Mode::NORMAL);
     bridge10.setSink(&router);
@@ -135,9 +101,6 @@ void amp_thread(void* ud) {
     iax2Channel1.setPrivateKey(getenv("AMP_PRIVATE_KEY"));
     iax2Channel1.setDNSRoot(getenv("AMP_ASL_DNS_ROOT"));
     router.addRoute(&iax2Channel1, 1);
-
-    // #### TODO: REMOVE
-    QueueWatcher watcher(iax2Channel1, radio2);
 
     // #### TODO: UNDERSTAND THIS, POSSIBLE RACE CONDITION
     Sleep(500);
@@ -156,6 +119,6 @@ void amp_thread(void* ud) {
     }
 
     // Main loop        
-    Runnable2* tasks[] = { &radio2, &iax2Channel1, &bridge10, &watcher, &router };
+    Runnable2* tasks[] = { &radio2, &iax2Channel1, &bridge10, &router };
     EventLoop::run(log, clock, 0, 0, tasks, std::size(tasks), 0, false);
 }

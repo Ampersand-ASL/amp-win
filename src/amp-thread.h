@@ -20,14 +20,11 @@
 #include <string>
 
 #include "kc1fsz-tools/threadsafequeue.h"
+#include "Message.h"
+
+using namespace kc1fsz;
 
 void amp_thread(void*);
 
-struct Request {
-    std::string cmd;
-    std::string localNodeNumber;
-    std::string targetNodeNumber;
-};
-
-extern threadsafequeue<Request> MsgQueue;
+extern threadsafequeue<Message> MsgQueueIn;
 

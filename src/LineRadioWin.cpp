@@ -98,6 +98,16 @@ void LineRadioWin::setCos(bool cos) {
     _setCosStatus(cos);
 }
 
+void LineRadioWin::consume(const Message& msg) {
+    if (msg.isSignal(Message::SignalType::COS_ON)) {
+        setCos(true);
+    } else if (msg.isSignal(Message::SignalType::COS_OFF)) {
+        setCos(false);
+    } else {
+        LineRadio::consume(msg);
+    }
+}
+
 /**
  * This is activity that happens on the "main" thread.
  */

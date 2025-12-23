@@ -24,6 +24,7 @@
 #include <windows.h>
 
 #include "kc1fsz-tools/threadsafequeue.h"
+#include "Message.h"
 
 #include "amp-thread.h"
 
@@ -43,7 +44,8 @@ public:
     static void reg(HINSTANCE hInstance);
 
     MainWindow(HINSTANCE hInstance, Log& log, const char* localNodeNumber,
-        threadsafequeue<Request>& msgQueue);
+        threadsafequeue<Message>& msgQueue2,
+        unsigned networkDestLineId, unsigned radioDestLineId);
     ~MainWindow();
     void show(int nCmdShow);
 
@@ -52,13 +54,14 @@ private:
     static LRESULT CALLBACK _windProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     LRESULT _msg(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-
     Log& _log;
     HWND _hwnd;
     HWND _hEditNode;
     HBRUSH _whiteBrush;
     std::string _localNodeNumber;
-    threadsafequeue<Request>& _msgQueue;
+    threadsafequeue<Message>& _msgQueue2;
+    unsigned _networkDestLineId;
+    unsigned _radioDestLineId;
     bool _pttToggle = false;
 
     HWND _hPttButton;

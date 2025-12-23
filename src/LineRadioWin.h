@@ -41,6 +41,10 @@ public:
 
     void setCos(bool cos);
 
+    // ----- MessageConsumer --------------------------------------------------
+
+    void consume(const Message& msg);
+
     // ----- Runnable ---------------------------------------------------------
 
     bool run2();
