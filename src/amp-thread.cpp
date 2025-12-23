@@ -35,6 +35,8 @@
 using namespace std;
 using namespace kc1fsz;
 
+#define WEB_UI_PORT 8080
+
 /*
 // Connects the manager to the IAX channel (TEMPORARY)
 class ManagerSink : public ManagerTask::CommandSink {
@@ -77,16 +79,13 @@ public:
     }
 };
 
-// #### TODO: Pull this out of the global scope
-threadsafequeue<Message> MsgQueueIn;
-
 void amp_thread(void* ud) {
 
     Log& log = *((Log*)ud);
     log.info("amp_thread start");
     StdClock clock;
 
-    MultiRouter router(MsgQueueIn);
+    MultiRouter router;
 
     amp::Bridge bridge10(log, clock, amp::BridgeCall::Mode::NORMAL);
     bridge10.setSink(&router);
@@ -103,7 +102,11 @@ void amp_thread(void* ud) {
     iax2Channel1.setDNSRoot(getenv("AMP_ASL_DNS_ROOT"));
     router.addRoute(&iax2Channel1, 1);
 
-    amp::WebUi webUi(log, clock, router, 8080, 1, 2);
+    // Instantiate the server for the web-based UI
+    amp::WebUi webUi(log, clock, router, WEB_UI_PORT, 1, 2);
+    // This allow the WebUi to watch all traffic and pull out the things 
+    // that are relevant for status display.
+    router.addRoute(&webUi, MultiRouter::BROADCAST);
 
     // #### TODO: UNDERSTAND THIS, POSSIBLE RACE CONDITION
     Sleep(500);
