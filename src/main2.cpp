@@ -25,7 +25,6 @@
 
 #include "amp-thread.h"
 #include "service-thread.h"
-#include "ui-thread.h"
 
 using namespace std;
 using namespace kc1fsz;
@@ -62,8 +61,6 @@ int main(int, const char**) {
     //_beginthread(amp_thread, 0, (void*)&log);
     // Get the Service thread running
     _beginthread(service_thread, 0, (void*)&log);
-    // UI thread
-    _beginthread(ui_thread, 0, (void*)&log);
 
     log.info("Main loop");
 

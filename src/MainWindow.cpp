@@ -181,7 +181,7 @@ LRESULT MainWindow::_msg(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
             int controlID = LOWORD(wParam);
             int messageType = HIWORD(wParam);
             if (controlID == IDC_BUTTON_CONNECT && messageType == BN_CLICKED) {
-                PayloadConnect req;
+                PayloadCall req;
                 strcpyLimited(req.localNumber, _localNodeNumber.c_str(), sizeof(req.localNumber));
                 strcpyLimited(req.targetNumber, getEditText(_hEditNode).c_str(), sizeof(req.targetNumber));
                 Message msg(Message::Type::SIGNAL, Message::SignalType::CALL_NODE, 

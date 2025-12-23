@@ -30,6 +30,7 @@
 #include "MultiRouter.h"
 
 #include "amp-thread.h"
+#include "WebUi.h"
 
 using namespace std;
 using namespace kc1fsz;
@@ -102,6 +103,8 @@ void amp_thread(void* ud) {
     iax2Channel1.setDNSRoot(getenv("AMP_ASL_DNS_ROOT"));
     router.addRoute(&iax2Channel1, 1);
 
+    amp::WebUi webUi(log, clock, router, 8080, 1, 2);
+
     // #### TODO: UNDERSTAND THIS, POSSIBLE RACE CONDITION
     Sleep(500);
 
@@ -119,6 +122,6 @@ void amp_thread(void* ud) {
     }
 
     // Main loop        
-    Runnable2* tasks[] = { &radio2, &iax2Channel1, &bridge10, &router };
+    Runnable2* tasks[] = { &radio2, &iax2Channel1, &bridge10, &router, &webUi };
     EventLoop::run(log, clock, 0, 0, tasks, std::size(tasks), 0, false);
 }

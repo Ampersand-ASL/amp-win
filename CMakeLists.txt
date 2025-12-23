@@ -114,7 +114,7 @@ add_executable(main2
   amp-core/src/BridgeIn.cpp
   amp-core/src/BridgeOut.cpp
   amp-core/src/Resampler.cpp
-  amp-core/src/ui-thread.cpp
+  amp-core/src/WebUi.cpp
   amp-core/src/MultiRouter.cpp
   kc1fsz-tools-cpp/src/Common.cpp
   kc1fsz-tools-cpp/src/NetUtils.cpp
