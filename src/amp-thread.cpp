@@ -136,7 +136,8 @@ void amp_thread(void* ud) {
     // #### TODO: UNDERSTAND THIS, POSSIBLE RACE CONDITION
     Sleep(500);
 
-    int rc = iax2Channel1.open(AF_INET, atoi(getenv("AMP_IAX_PORT")), "radio");
+    int rc;
+    rc = iax2Channel1.open(AF_INET, atoi(getenv("AMP_IAX_PORT")), "radio");
     if (rc < 0) {
         log.error("Failed to open IAX2 connection %d", rc);
         return;
