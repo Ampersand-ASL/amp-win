@@ -45,6 +45,7 @@ add_executable(main
   amp-core/src/BridgeIn.cpp
   amp-core/src/BridgeOut.cpp
   amp-core/src/Resampler.cpp
+  amp-core/src/MultiRouter.cpp
   kc1fsz-tools-cpp/src/Common.cpp
   kc1fsz-tools-cpp/src/NetUtils.cpp
   kc1fsz-tools-cpp/src/DTMFDetector2.cpp
@@ -114,6 +115,7 @@ add_executable(main2
   amp-core/src/BridgeOut.cpp
   amp-core/src/Resampler.cpp
   amp-core/src/ui-thread.cpp
+  amp-core/src/MultiRouter.cpp
   kc1fsz-tools-cpp/src/Common.cpp
   kc1fsz-tools-cpp/src/NetUtils.cpp
   kc1fsz-tools-cpp/src/DTMFDetector2.cpp

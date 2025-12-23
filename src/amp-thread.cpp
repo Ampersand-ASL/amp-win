@@ -27,7 +27,8 @@
 #include "LineRadioWin.h"
 #include "EventLoop.h"
 #include "Bridge.h"
-#include "TwoLineRouter.h"
+//#include "TwoLineRouter.h"
+#include "MultiRouter.h"
 
 #include "amp-thread.h"
 
@@ -78,6 +79,7 @@ public:
 
 // #### TODO: Pull this out of the global scope
 threadsafequeue<Request> MsgQueue;
+threadsafequeue<Message> MsgQueue2;
 
 class QueueWatcher : public Runnable2 {
 public: 
@@ -117,20 +119,24 @@ void amp_thread(void* ud) {
     log.info("amp_thread start");
     StdClock clock;
 
+    MultiRouter router(MsgQueue2);
+
     amp::Bridge bridge10(log, clock, amp::BridgeCall::Mode::NORMAL);
+    bridge10.setSink(&router);
+    router.addRoute(&bridge10, 10);
     
-    LineRadioWin radio2(log, clock, bridge10, 2, 1, 10, 1);
+    LineRadioWin radio2(log, clock, router, 2, 1, 10, 1);
+    router.addRoute(&radio2, 2);
 
     CallValidatorStd val;
     LocalRegistryStd locReg;
-    LineIAX2 iax2Channel1(log, clock, 1, bridge10, &val, &locReg);
+    LineIAX2 iax2Channel1(log, clock, 1, router, &val, &locReg, 10);
     //iax2Channel1.setTrace(true);
     iax2Channel1.setPrivateKey(getenv("AMP_PRIVATE_KEY"));
     iax2Channel1.setDNSRoot(getenv("AMP_ASL_DNS_ROOT"));
+    router.addRoute(&iax2Channel1, 1);
 
-    TwoLineRouter router(iax2Channel1, 1, radio2, 2);
-    bridge10.setSink(&router);
-
+    // #### TODO: REMOVE
     QueueWatcher watcher(iax2Channel1, radio2);
 
     // #### TODO: UNDERSTAND THIS, POSSIBLE RACE CONDITION
@@ -150,7 +156,6 @@ void amp_thread(void* ud) {
     }
 
     // Main loop        
-    const unsigned taskCount = 4;
-    Runnable2* tasks[taskCount] = { &radio2, &iax2Channel1, &bridge10, &watcher };
-    EventLoop::run(log, clock, 0, 0, tasks, taskCount, 0, false);
+    Runnable2* tasks[] = { &radio2, &iax2Channel1, &bridge10, &watcher, &router };
+    EventLoop::run(log, clock, 0, 0, tasks, std::size(tasks), 0, false);
 }
