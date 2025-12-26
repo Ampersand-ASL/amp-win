@@ -22,6 +22,7 @@
 #include <curl/curl.h>
 
 #include "kc1fsz-tools/win32/Win32MTLog.h"
+#include "kc1fsz-tools/fixedstring2.h"
 
 #include "amp-thread.h"
 #include "service-thread.h"

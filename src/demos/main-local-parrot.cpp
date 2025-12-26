@@ -23,7 +23,7 @@
 
 #include "kc1fsz-tools/win32/Win32MTLog.h"
 
-#include "MainWindow.h"
+//#include "MainWindow.h"
 #include "amp-thread-local-parrot.h"
 
 using namespace std;
@@ -40,7 +40,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int
 
     Win32MTLog log;
 
-    MainWindow::reg(hInstance);
+    //MainWindow::reg(hInstance);
     
     // COM initialization (needed for audio interface)
     HRESULT hr = CoInitializeEx(nullptr, COINIT_SPEED_OVER_MEMORY);
@@ -51,8 +51,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int
     // Get the AMP thread running
     _beginthread(amp_thread, 0, (void*)&log);
 
-    MainWindow w(hInstance, log, "61057", MsgQueue);
-    w.show(nCmdShow);
+    //MainWindow w(hInstance, log, "61057", MsgQueueIn, 0, 2);
+    //w.show(nCmdShow);
 
     // Run the message loop.
     MSG msg = { };

@@ -31,6 +31,7 @@
 
 #include "amp-thread.h"
 #include "WebUi.h"
+#include "Config.h"
 
 using namespace std;
 using namespace kc1fsz;
@@ -87,7 +88,8 @@ void amp_thread(void* ud) {
 
     MultiRouter router;
 
-    amp::Bridge bridge10(log, clock, amp::BridgeCall::Mode::NORMAL);
+    //amp::Bridge bridge10(log, clock, amp::BridgeCall::Mode::NORMAL);
+    amp::Bridge bridge10(log, clock, amp::BridgeCall::Mode::PARROT);
     bridge10.setSink(&router);
     router.addRoute(&bridge10, 10);
     
@@ -102,8 +104,13 @@ void amp_thread(void* ud) {
     iax2Channel1.setDNSRoot(getenv("AMP_ASL_DNS_ROOT"));
     router.addRoute(&iax2Channel1, 1);
 
+    // #### TODO: MOVE
+    amp::Config config;
+    config.setDefaults();
+
     // Instantiate the server for the web-based UI
-    amp::WebUi webUi(log, clock, router, WEB_UI_PORT, 1, 2);
+    amp::WebUi webUi(log, clock, router, WEB_UI_PORT, 1, 2, "./config.json");
+    webUi.setConfig(config);
     // This allow the WebUi to watch all traffic and pull out the things 
     // that are relevant for status display.
     router.addRoute(&webUi, MultiRouter::BROADCAST);

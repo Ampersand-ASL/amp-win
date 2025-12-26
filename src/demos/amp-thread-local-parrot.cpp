@@ -28,6 +28,7 @@
 #include "EventLoop.h"
 #include "Bridge.h"
 #include "BridgeCall.h"
+#include "MultiRouter.h"
 
 #include "demos/amp-thread-local-parrot.h"
 
@@ -35,34 +36,8 @@ using namespace std;
 using namespace kc1fsz;
 
 // #### TODO: Pull this out of the global scope
-threadsafequeue<Request> MsgQueue;
-
-class QueueWatcher : public Runnable2 {
-public: 
-
-    QueueWatcher(LineRadioWin& radio) : _radio(radio) { }
-
-    virtual bool run2() {
-        Request req;
-        if (MsgQueue.try_pop(req)) {
-            if (req.cmd == "ptton")
-                _radio.setCos(true);
-            else if (req.cmd == "pttoff")
-                _radio.setCos(false);
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
-    // #### TODO: REMOVE
-    virtual void audioRateTick(uint32_t tickTimeMs) { }
-
-private:
-
-    LineRadioWin& _radio;
-};
+// NOTE: NOT USED SINCE THERE IS NO NETWORK CONNECTION 
+threadsafequeue<Message> MsgQueueIn;
 
 void amp_thread(void* ud) {
 
@@ -70,25 +45,26 @@ void amp_thread(void* ud) {
     log.info("amp_thread start");
     StdClock clock;
 
-    amp::Bridge bridge10(log, clock, amp::BridgeCall::Mode::PARROT);
+    MultiRouter router;
 
-    LineRadioWin radio0(log, clock, bridge10, 2, 1, 10, 1);
-    bridge10.setSink(&radio0);
+    amp::Bridge bridge10(log, clock, amp::BridgeCall::Mode::PARROT);
+    bridge10.setSink(&router);
+    router.addRoute(&bridge10, 10);
+
+    LineRadioWin radio2(log, clock, router, 2, 1, 10, 1);
+    router.addRoute(&radio2, 2);
 
     Sleep(1000);
 
     log.info("Opening radio connection");
     
-    int rc = radio0.open("","", false);
+    int rc = radio2.open("","", false);
     if (rc < 0) {
         log.error("Failed to open radio connection %d", rc);
         return;
     }
 
-    QueueWatcher watcher0(radio0);
-   
     // Main loop        
-    const unsigned task2Count = 3;
-    Runnable2* tasks2[task2Count] = { &radio0, &bridge10, &watcher0 };
-    EventLoop::run(log, clock, 0, 0, tasks2, task2Count, 0, true);
+    Runnable2* tasks2[] = { &radio2, &bridge10 };
+    EventLoop::run(log, clock, 0, 0, tasks2, std::size(tasks2), 0, true);
 }
