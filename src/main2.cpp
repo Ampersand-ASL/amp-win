@@ -16,6 +16,8 @@
  */
 #include <iostream>
 #include <cassert>
+#include <fstream>
+#include <filesystem>
 
 #include <process.h>
 
@@ -29,6 +31,8 @@
 
 using namespace std;
 using namespace kc1fsz;
+
+static const string DEFAULT_CONFIG = "{\"aslDnsRoot\":\"nodes.allstarlink.org\",\"aslRegUrl\":\"https://register.allstarlink.org\",\"aslStatUrl\":\"http://stats.allstarlink.org/uhandler\",\"audioDeviceType\":\"\",\"audioDeviceUsbBus\":\"\",\"audioDeviceUsbPort\":\"\",\"call\":\"\",\"iaxPort4\":\"4568\",\"lastUpdateMs\":0,\"node\":\"\",\"password\":\"\",\"privateKey\":\"\"}";
 
 int main(int, const char**) {
 
@@ -58,14 +62,34 @@ int main(int, const char**) {
       
     // TODO GET HANDLE FOR SHUTDOWN
 
-    // Get the AMP thread running
-    //_beginthread(amp_thread, 0, (void*)&log);
+    // Check to see if the config file exists, create if not
+    string cfgFileName = "./config.json";
+    log.info("Using configuration file %s", cfgFileName.c_str());
+
+    if (!filesystem::exists(cfgFileName)) {
+        log.info("Creating default configuration");
+        ofstream cfg(cfgFileName);
+        if (cfg.is_open()) {
+            cfg << DEFAULT_CONFIG << endl;
+            cfg.close();
+        } else {
+            log.error("Unable to create default configuration");
+        }
+    }
+
     // Get the Service thread running
-    _beginthread(service_thread, 0, (void*)&log);
+    service_thread_args args1;
+    args1.cfgFileName = cfgFileName;
+    args1.log = &log;
 
-    log.info("Main loop");
+    _beginthread(service_thread, 0, &args1);
 
-    amp_thread(&log);
+    // Amp thread runs on main thread
+    amp_thread_args args2;
+    args2.cfgFileName = cfgFileName;
+    args2.log = &log;
+
+    amp_thread(&args2);
 
     return 0;
 }

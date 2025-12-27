@@ -25,8 +25,8 @@ add_executable(main
   src/main.cpp
   src/MainWindow.cpp
   src/amp-thread.cpp
-  src/service-thread.cpp
   src/LineRadioWin.cpp
+  amp-core/src/service-thread.cpp
   amp-core/src/EventLoop.cpp
   amp-core/src/Message.cpp
   amp-core/src/Line.cpp
@@ -94,8 +94,9 @@ target_link_options(main PRIVATE -Wl,--stack,4096000)
 add_executable(main2
   src/main2.cpp
   src/amp-thread.cpp
-  src/service-thread.cpp
   src/LineRadioWin.cpp
+  amp-core/src/ConfigPoller.cpp
+  amp-core/src/service-thread.cpp
   amp-core/src/EventLoop.cpp
   amp-core/src/Message.cpp
   amp-core/src/Line.cpp
@@ -116,7 +117,6 @@ add_executable(main2
   amp-core/src/Resampler.cpp
   amp-core/src/WebUi.cpp
   amp-core/src/MultiRouter.cpp
-  amp-core/src/Config.cpp
   kc1fsz-tools-cpp/src/Common.cpp
   kc1fsz-tools-cpp/src/NetUtils.cpp
   kc1fsz-tools-cpp/src/DTMFDetector2.cpp

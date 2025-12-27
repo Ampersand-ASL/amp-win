@@ -19,12 +19,20 @@
 #include <iostream>
 #include <string>
 
+#include "kc1fsz-tools/Log.h"
 #include "kc1fsz-tools/threadsafequeue.h"
+
 #include "Message.h"
 
 using namespace kc1fsz;
 
+struct amp_thread_args {
+    std::string cfgFileName;
+    Log* log;
+};
+
 void amp_thread(void*);
 
+// #### TODO: NEEDED?
 extern threadsafequeue<Message> MsgQueueIn;
 

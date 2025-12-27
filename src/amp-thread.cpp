@@ -28,10 +28,10 @@
 #include "EventLoop.h"
 #include "Bridge.h"
 #include "MultiRouter.h"
+#include "ConfigPoller.h"
 
 #include "amp-thread.h"
 #include "WebUi.h"
-#include "Config.h"
 
 using namespace std;
 using namespace kc1fsz;
@@ -82,14 +82,18 @@ public:
 
 void amp_thread(void* ud) {
 
-    Log& log = *((Log*)ud);
+    // Pull out the thread startup arguments
+    const amp_thread_args* args = (amp_thread_args*)ud;
+    const string cfgFileName = args->cfgFileName;
+    Log& log = *(args->log);
+
     log.info("amp_thread start");
+
     StdClock clock;
 
     MultiRouter router;
 
-    //amp::Bridge bridge10(log, clock, amp::BridgeCall::Mode::NORMAL);
-    amp::Bridge bridge10(log, clock, amp::BridgeCall::Mode::PARROT);
+    amp::Bridge bridge10(log, clock, amp::BridgeCall::Mode::NORMAL);
     bridge10.setSink(&router);
     router.addRoute(&bridge10, 10);
     
@@ -104,34 +108,42 @@ void amp_thread(void* ud) {
     iax2Channel1.setDNSRoot(getenv("AMP_ASL_DNS_ROOT"));
     router.addRoute(&iax2Channel1, 1);
 
-    // #### TODO: MOVE
-    amp::Config config;
-    config.setDefaults();
-
     // Instantiate the server for the web-based UI
-    amp::WebUi webUi(log, clock, router, WEB_UI_PORT, 1, 2, "./config.json");
-    webUi.setConfig(config);
+    amp::WebUi webUi(log, clock, router, WEB_UI_PORT, 1, 2, cfgFileName.c_str());
     // This allow the WebUi to watch all traffic and pull out the things 
     // that are relevant for status display.
     router.addRoute(&webUi, MultiRouter::BROADCAST);
 
-    // #### TODO: UNDERSTAND THIS, POSSIBLE RACE CONDITION
-    Sleep(500);
+    // Setup the configuration poller for this thread
+    amp::ConfigPoller cfgPoller(log, cfgFileName.c_str(), 
+        // This function will be called on any update to the configuration document.
+        [&log, &webUi, &iax2Channel1, &radio2, &bridge10](const json& cfg) {
 
-    int rc;
-    rc = iax2Channel1.open(AF_INET, atoi(getenv("AMP_IAX_PORT")), "radio");
-    if (rc < 0) {
-        log.error("Failed to open IAX2 connection %d", rc);
-        return;
-    }
-    
-    rc = radio2.open("","");
-    if (rc < 0) {
-        log.error("Failed to open radio connection %d", rc);
-        return;
-    }
+            log.info("Configuration change detected");
+            cout << cfg.dump() << endl;
+
+            // Transfer the new configuration into the various places it is needed
+            webUi.setConfig(cfg);
+
+            int rc;
+            rc = iax2Channel1.open(AF_INET, std::stoi(cfg["iaxPort4"].get<std::string>()), "radio");
+            if (rc < 0) {
+                log.error("Failed to open IAX2 connection %d", rc);
+            }
+
+            // #### TODO: Audio Device Selection
+            rc = radio2.open("","");
+            if (rc < 0) {
+                log.error("Failed to open radio connection %d", rc);
+                return;
+            }
+        }
+    );
+
+    // #### TODO: UNDERSTAND THIS, POSSIBLE RACE CONDITION
+    //Sleep(500);
 
     // Main loop        
-    Runnable2* tasks[] = { &radio2, &iax2Channel1, &bridge10, &router, &webUi };
+    Runnable2* tasks[] = { &radio2, &iax2Channel1, &bridge10, &router, &webUi, &cfgPoller };
     EventLoop::run(log, clock, 0, 0, tasks, std::size(tasks), 0, false);
 }
