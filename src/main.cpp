@@ -16,42 +16,62 @@
  */
 #include <iostream>
 #include <cassert>
+#include <fstream>
+#include <filesystem>
+#include <thread>
 
 #include <process.h>
 
+// 3rd party
 #include <curl/curl.h>
+// 3rd party command-line parser
+#include <argparse/argparse.hpp>
 
 #include "kc1fsz-tools/win32/Win32MTLog.h"
+#include "kc1fsz-tools/linux/StdClock.h"
+#include "kc1fsz-tools/fixedstring2.h"
+#include "kc1fsz-tools/threadsafequeue2.h"
 
-#include "MainWindow.h"
-#include "amp-thread.h"
+// amp-core
+#include "config-handler.h"
 #include "service-thread.h"
+#include "LineIAX2.h"
+#include "EventLoop.h"
+#include "Bridge.h"
+#include "MultiRouter.h"
+#include "ConfigPoller.h"
+#include "WebUi.h"
+#include "TraceLog.h"
+
+#include "config-handler.h"
+#include "LineRadioWin.h"
+#include "CallValidatorStd.h"
+#include "LocalRegistryStd.h"
 
 using namespace std;
 using namespace kc1fsz;
 
-/*
-Development:
+// ### TODO: FIGURE OUT HOW TO MAKE THIS AUTOMATIC
+static const char* VERSION = "20260125.0";
+const char* const GIT_HASH = "?";
 
-export AMP_NODE0_NUMBER=672730
-export AMP_NODE0_PASSWORD=xxxxx
-export AMP_NODE0_MGR_PORT=5038
-export AMP_IAX_PORT=4568
-export AMP_IAX_PROTO=IPV4
-export AMP_ASL_REG_URL=https://register.allstarlink.org
-export AMP_ASL_STAT_URL=http://stats.allstarlink.org/uhandler
-export AMP_ASL_DNS_ROOT=allstarlink.org
-export AMP_NODE0_USBSOUND="vendorname:\"C-Media Electronics, Inc.\""
-export AMP_PRIVATE_KEY=95EBE5A75615C97A3272163CC842EAF8EC0F79C3215189A24403ADF3A47E0DEC
-*/
-int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int nCmdShow) {
+int main(int argc, const char** argv) {
 
     // TODO: CRASH DISPLAY
 
+    StdClock clock;
     Win32MTLog log;
+    const unsigned traceLogSize = 64;
+    std::string traceLogData[traceLogSize];
+    TraceLog traceLog(clock, traceLogData, traceLogSize);
 
-    MainWindow::reg(hInstance);
-    
+    log.info("AMP Windows");
+    log.info("Powered by the Ampersand ASL Project https://github.com/Ampersand-ASL");
+    log.info("Copyright (C) 2026, Bruce MacKinnon KC1FSZ");
+    log.info("Version %s Git Hash %s", VERSION, GIT_HASH);
+    log.info("----------------------------------------------------------------------");
+
+    // Winsock init
     WORD wVersionRequested = MAKEWORD(2, 2);
     WSADATA wsaData;
     int rc = WSAStartup(wVersionRequested, &wsaData);
@@ -71,24 +91,110 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int
     HRESULT hr = CoInitializeEx(nullptr, COINIT_SPEED_OVER_MEMORY);
     assert(hr == S_OK);
       
-    // TODO GET HANDLE FOR SHUTDOWN
+    // Parse command line arguments
+    argparse::ArgumentParser program("amp-server", VERSION);
+    string cfgFileName;
+    string defaultCfgFileName = getenv("USERPROFILE");
+    defaultCfgFileName += "/amp-win.json";
+    program.add_argument("--config")
+        .help("Name of configuration file")
+        .default_value(defaultCfgFileName)
+        .store_into(cfgFileName);
+    
+    int uiPort = 8080;
+    program.add_argument("--httpport")
+        .store_into(uiPort)
+        .default_value(8080)
+        .help("Port number for HTTP UI server");
 
-    // Get the AMP thread running
-    _beginthread(amp_thread, 0, (void*)&log);
-    // Get the Service thread running
-    _beginthread(service_thread, 0, (void*)&log);
+    program.add_argument("--trace")
+        .help("Turn on network tracing")
+        .default_value(false)
+        .implicit_value(true);
 
-    MainWindow w(hInstance, log, "672730", MsgQueueIn, 1, 2);
-    w.show(nCmdShow);
-
-    log.info("Main loop");
-
-    // Run the Windows message loop.
-    MSG msg = { };
-    while (GetMessage(&msg, NULL, 0, 0)) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+    try {
+        program.parse_args(argc, argv);
+    } catch (const std::exception& err) {
+        log.error("Argument error: %s", err.what());
+        std::exit(-2);
     }
+
+    log.info("Using configuration file %s", cfgFileName.c_str());
+
+    // Create a default/starting config file if this is the first time.
+    if (!filesystem::exists(cfgFileName)) {
+        log.info("Creating default configuration");
+        ofstream cfg(cfgFileName);
+        if (cfg.is_open()) 
+            cfg << amp::ConfigPoller::DEFAULT_CONFIG << endl;
+        else {
+            log.error("Unable to create default configuration");
+            std::exit(-3);
+        }
+    }
+
+    // Get the service thread running. This handles non-time-sensitive
+    // stuff like registration, stats, etc.
+    std::thread serviceThread(service_thread, &cfgFileName, &log);
+
+    // This is the router (aka "bus") that passes Message objects between the rest 
+    // of the components in the system. You'll see that everything else below is
+    // wired to the router one way or the other.
+    threadsafequeue2<Message> respQueue;
+    MultiRouter router(respQueue);
+
+    // The Bridge is what provides the audio conference capability. The various 
+    // Lines connect to the Bridge.
+    amp::Bridge bridge10(log, traceLog, clock, router, amp::BridgeCall::Mode::NORMAL, 10, 
+        0, 0, 0);
+    router.addRoute(&bridge10, 10);
+
+    // This is the Line that connects to the USB sound interface
+    LineRadioWin radio2(log, clock, router, 2, 1, 10, 1);
+    router.addRoute(&radio2, 2);
+
+    // This is the Line that makes the IAX2 network connection
+    CallValidatorStd val;
+    LocalRegistryStd locReg;
+    LineIAX2 iax2Channel1(log, traceLog, clock, 1, router, &val, &locReg, 10);
+    router.addRoute(&iax2Channel1, 1);
+    if (program["--trace"] == true)
+        iax2Channel1.setTrace(true);
+
+    // This is the HTTP server that provides the UI
+    amp::WebUi webUi(log, clock, router, uiPort, 1, 2, cfgFileName.c_str(), VERSION,
+        traceLog);
+    // This allow the WebUi to watch all traffic and pull out the things 
+    // that are relevant for status display.
+    router.addRoute(&webUi, MultiRouter::BROADCAST);
+
+    // This is a poller that watches for changes to the configuration file
+    // and applies those changes to everything on the main thread.
+    amp::ConfigPoller cfgPoller(log, cfgFileName.c_str(), 
+        // This function will be called on any update to the configuration document.
+        [&log, &webUi, &iax2Channel1, &radio2, &bridge10]
+        (const json& cfg) {
+
+            log.info("Configuration change detected");
+            cout << cfg.dump() << endl;
+
+            try {
+                amp::configHandler(log, cfg, webUi, iax2Channel1, radio2, bridge10);
+            }
+            // ### TODO MORE SPECIFIC
+            catch (json::exception& ex) {
+                log.error("Failed to process configuration change %s", ex.what());
+            }
+        }
+    );
+
+    // Setup the EventLoop with all of the tasks that need to be run on this thread
+    Runnable2* tasks[] = { &radio2, &iax2Channel1, &bridge10, &webUi, &cfgPoller };
+    EventLoop::run(log, clock, 0, 0, tasks, std::size(tasks), nullptr, false);
+
+    // #### TODO: At the moment there is no clean way to get out of the loop
 
     return 0;
 }
+
+

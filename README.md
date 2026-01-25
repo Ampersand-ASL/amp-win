@@ -10,11 +10,7 @@
 
 # Building the Windows Server
 
-
-
-
-Sound
------
+# Sound
 
 After trying a few things I ended up using the Windows WASAPI interface.
 
@@ -22,7 +18,6 @@ After trying a few things I ended up using the Windows WASAPI interface.
 
 https://medium.com/@shahidahmadkhan86/sound-in-windows-the-wasapi-in-c-23024cdac7c6
 
-WebSockets
------------
+# WebSockets
 
 https://pages.ably.com/hubfs/the-websocket-handbook.pdf
