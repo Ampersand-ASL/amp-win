@@ -4,11 +4,20 @@
         pacman -S mingw-w64-ucrt-x86_64-gcc
         pacman -S mingw-w64-ucrt-x86_64-curl
         pacman -S make
+        # Needed to get the xxd command
+        pacman -S vim
         # This was needed to get GIT to remember credentials. Probably
         # not the most secure method.
         git config --global credential.helper store
 
 # Building the Windows Server
+
+        git clone https://github.com/Ampersand-ASL/amp-win.git
+        cd amp-win
+        mkdir build
+        cd build
+        cmake ..
+        make main        
 
 # Sound
 

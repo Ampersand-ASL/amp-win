@@ -97,6 +97,14 @@ int configHandler(Log& log, const json& cfg, WebUi& webUi, LineIAX2& iax2Channel
             }
         }
         */
+        rc = radio2.open(0, 0, false);
+        if (rc < 0) {
+            if (rc == -12)
+                log.error("Unable to open sound device, busy");
+            else 
+                log.error("Unable to open sound device");
+            return -1;
+        }
 
         // Resolve the COS signal
         string aslCosFrom = cfg["aslCosFrom"].get<std::string>();
