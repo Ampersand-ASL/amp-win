@@ -16,9 +16,12 @@
  */
 #include <stdexcept>
 
+// amp-core
 #include "WebUi.h"
 #include "LineIAX2.h"
+#include "Bridge.h"
 
+// amp-win
 #include "LineRadioWin.h"
 #include "config-handler.h"
 
@@ -36,12 +39,49 @@ int configHandler(Log& log, const json& cfg, WebUi& webUi, LineIAX2& iax2Channel
 
     //iax2Channel1.setPrivateKey(getenv("AMP_PRIVATE_KEY"));
     //iax2Channel1.setDNSRoot(getenv("AMP_ASL_DNS_ROOT"));
-    
+
+    if (cfg.contains("callsign")) {
+        string c = cfg["callsign"];
+        radio2.setCallsign(c.c_str());
+    }
+
+    if (cfg.contains("node")) {
+        string localNode = cfg["node"];
+        if (!localNode.empty()) {
+            bridge10.setLocalNodeNumber(localNode.c_str());
+            // #### TODO: MULTIPLE NODES AS SOME POINT
+            iax2Channel1.setPokeNodeNumber(localNode.c_str());
+        }
+    }
+
+    // Kerchunk filter configuration
+    if (cfg.contains("kfnodes")) {
+        // The nodes are comma-separated
+        string kfnodes = cfg["kfnodes"].get<std::string>();
+        vector<string> l;
+        // This is a comma-delimited list
+        std::istringstream tokenStream(kfnodes);
+        string token;
+        while (std::getline(tokenStream, token, ',')) {
+            trim(token);
+            if (token.empty())
+                continue;
+            l.push_back(token);
+        }
+        bridge10.setKerchunkFilterNodes(l);
+    }
+
+    if (cfg.contains("kfdelay")) {
+        // The nodes are comma-separated
+        string kfdelay = cfg["kfdelay"].get<std::string>();
+        bridge10.setKerchunkFilterDelayMs(stoi(kfdelay));
+    }
+
     if (!cfg["iaxPort"].is_string())
         throw invalid_argument("iaxPort is missing/invalid");
 
     int rc;
-    rc = iax2Channel1.open(AF_INET, std::stoi(cfg["iaxPort"].get<std::string>()), "radio");
+    rc = iax2Channel1.open(AF_INET, std::stoi(cfg["iaxPort"].get<std::string>()));
     if (rc < 0) {
         log.error("Failed to open IAX2 line %d", rc);
     }

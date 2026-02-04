@@ -31,6 +31,7 @@
 #include "kc1fsz-tools/linux/StdClock.h"
 #include "kc1fsz-tools/fixedstring2.h"
 #include "kc1fsz-tools/threadsafequeue2.h"
+#include "kc1fsz-tools/copyableatomic.h"
 
 // amp-core
 #include "config-handler.h"
@@ -45,15 +46,15 @@
 
 #include "config-handler.h"
 #include "LineRadioWin.h"
-#include "CallValidatorStd.h"
 #include "LocalRegistryStd.h"
 
 using namespace std;
 using namespace kc1fsz;
 
 // ### TODO: FIGURE OUT HOW TO MAKE THIS AUTOMATIC
-static const char* VERSION = "20260125.0";
+static const char* VERSION = "20260204.0";
 const char* const GIT_HASH = "?";
+static const char* PUBLIC_USER = "radio";
 
 int main(int argc, const char** argv) {
 
@@ -133,20 +134,25 @@ int main(int argc, const char** argv) {
         }
     }
 
-    // Get the service thread running. This handles non-time-sensitive
-    // stuff like registration, stats, etc.
-    std::thread serviceThread(service_thread, &cfgFileName, &log);
-
     // This is the router (aka "bus") that passes Message objects between the rest 
     // of the components in the system. You'll see that everything else below is
     // wired to the router one way or the other.
     threadsafequeue2<Message> respQueue;
+    // A wrapper that makes the response queue look like a MessageConsumer
+    QueueConsumer respQueueConsumer(respQueue);
+
     MultiRouter router(respQueue);
+
+    copyableatomic<std::string> pokeAddr;
+
+    // Get the service thread running. This handles non-time-sensitive
+    // stuff like registration, stats, etc.
+    std::thread serviceThread(service_thread, &cfgFileName, &log, VERSION, &pokeAddr);
 
     // The Bridge is what provides the audio conference capability. The various 
     // Lines connect to the Bridge.
     amp::Bridge bridge10(log, traceLog, clock, router, amp::BridgeCall::Mode::NORMAL, 10, 
-        0, 0, 0);
+        0, 0, 0, 1);
     router.addRoute(&bridge10, 10);
 
     // This is the Line that connects to the USB sound interface
@@ -154,19 +160,20 @@ int main(int argc, const char** argv) {
     router.addRoute(&radio2, 2);
 
     // This is the Line that makes the IAX2 network connection
-    CallValidatorStd val;
     LocalRegistryStd locReg;
-    LineIAX2 iax2Channel1(log, traceLog, clock, 1, router, &val, &locReg, 10);
+    LineIAX2 iax2Channel1(log, traceLog, clock, 1, router, 0, 0, &locReg, 10, PUBLIC_USER);
     router.addRoute(&iax2Channel1, 1);
     if (program["--trace"] == true)
         iax2Channel1.setTrace(true);
 
     // This is the HTTP server that provides the UI
-    amp::WebUi webUi(log, clock, router, uiPort, 1, 2, cfgFileName.c_str(), VERSION,
+    amp::WebUi webUi(log, clock, respQueueConsumer, uiPort, 1, 2, cfgFileName.c_str(), VERSION,
         traceLog);
     // This allow the WebUi to watch all traffic and pull out the things 
     // that are relevant for status display.
     router.addRoute(&webUi, MultiRouter::BROADCAST);
+    // Get the UI thread going
+    std::thread webUiThread(amp::WebUi::uiThread, &webUi, &respQueueConsumer);
 
     // This is a poller that watches for changes to the configuration file
     // and applies those changes to everything on the main thread.
@@ -188,8 +195,17 @@ int main(int argc, const char** argv) {
         }
     );
 
+    // Setup a poller that looks at the bridge status and passes any updates
+    // over to the web UI. We will get an event *AT LEAST* every 10 seconds.
+    amp::BridgeStatusDocPoller statusPoller(log, clock, bridge10, 10 * 1000,
+        [&webUi](const json& statusDoc) {
+            webUi.setBridgeStatus(statusDoc);
+        }
+    );
+
     // Setup the EventLoop with all of the tasks that need to be run on this thread
-    Runnable2* tasks[] = { &radio2, &iax2Channel1, &bridge10, &webUi, &cfgPoller };
+    Runnable2* tasks[] = { &radio2, &iax2Channel1, &bridge10, &webUi, &cfgPoller,
+        &statusPoller, &router };
     EventLoop::run(log, clock, 0, 0, tasks, std::size(tasks), nullptr, false);
 
     // #### TODO: At the moment there is no clean way to get out of the loop

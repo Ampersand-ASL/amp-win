@@ -75,9 +75,9 @@ add_custom_command(
 add_executable(main
   src/main.cpp
   src/config-handler.cpp
+  src/service-thread.cpp
   src/LineRadioWin.cpp
   amp-core/src/ConfigPoller.cpp
-  amp-core/src/service-thread.cpp
   amp-core/src/EventLoop.cpp
   amp-core/src/Message.cpp
   amp-core/src/Line.cpp
