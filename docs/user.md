@@ -9,6 +9,7 @@ without the use of the Asterisk PBX system. [Project documentation is here](http
 
 All of the testing of this system is happening on:
 * Windows 11 (64-bit)
+* LogiTech Logi Zone 750 USB headset
 
 The [change log is located here](../CHANGELOG.md). I try to keep it up to date.
 
@@ -74,7 +75,18 @@ that looks like this:
 
 This configuration should be very consistent with that used on the ASL system. Fill 
 in your node number, password, and IAX port number. All other defaults should be enough to get your started.
-   
+
+[!IMPORTANT]
+At the moment there is no support for selecting audio input/output devices on the 
+configuration screen. Ampersand will use whatever has been selected as the "master"
+at the time the Ampersand Server is started. If you change the settings in Windows
+you will likely need to restart the Ampersand Server.
+
+Here's what my settings look like in the Windows control panel:
+
+![Windows Sound](win-sound.jpg)
+
+
 Network Debugging Hints
 =======================
 
