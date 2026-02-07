@@ -17,15 +17,15 @@ Network Setup (IPv4)
 ====================
 
 There are other detailed sources of information about ASL network configuration so 
-I won't repeat everything here. Bottom line:
+I won't repeat everything here. It's no different from what is required 
+for Asterisk. Bottom line:
 
 * Make sure you are clear on what IAX (UDP) port your node is using. This assignment
 happens on the [ASL Portal](https://www.allstarlink.org/portal/servers.php). UDP port 4569 is the common default.
 * Make sure that your IAX port is properly configured on the Ampersand Configuration 
 screen (see below).
 * If you expect to receive inbound calls make sure that your IAX port is opened/forwarded through your firewall/NAT system.
-* If you expect to receive inbound calls make sure that your IAX port is opened on any Linux/Windows firewall tools that are 
-running on your machine (if applicable).
+* If you expect to receive inbound calls make sure that your IAX port is opened on any Windows firewall tools that are running on your machine (if applicable).
 * You can test your network connection using the 61057 parrot. If the 61057 parrot
 tells you that your "network test succeeded" that means that your firewall is open
 and that you can accept inbound calls.
@@ -45,7 +45,7 @@ Unzip the .zip file in convenient location.
 Running the Server (Windows)
 ============================
 
-Open a command window and run the amp-win.exe executable. This is a console application.
+Open a command window and run the Ampersand.exe executable. This is a console application.
 
 Point you browser to http://127.0.0.1:8080 to see the user interface (or other port
 if you have changed the default).
@@ -55,15 +55,6 @@ Command-line options should be used if you want to override defaults:
 * --httport (defaults to 8080).  Used to change the port that the web UI runs on.
 * --config (defaults $USERPROFILE/amp-win.json). Used to change the location of the configuration file.
 * --trace Used to turn on extended network tracing.
-
-Work In Process (Windows)
-=========================
-
-_NOTE: I'm not an expert on Windows software distribution so any input will
-be appreciated!_
-
-* Provide instructions for making a Windows service.
-* Write log to a file in a good location.
 
 Setup/Configuration (Windows)
 ===========================
@@ -86,7 +77,6 @@ Here's what my settings look like in the Windows control panel:
 
 ![Windows Sound](win-sound.jpg)
 
-
 Network Debugging Hints
 =======================
 
@@ -106,6 +96,15 @@ first starts up your calls may not be accepted. Wait about 10 minutes and try ag
 * Test using parrot 61057 **before asking for network help**. This parrot will provide 
 information about whether (a) your node is registered and (b) whether your 
 node is reachable from the outside.
+
+Work In Process (Windows)
+=========================
+
+_NOTE: I'm not an expert on Windows software distribution so any input will
+be appreciated!_
+
+* Provide instructions for making a Windows service.
+* Write log to a file in a good location.
 
 Asking For Help
 ===============
