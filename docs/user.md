@@ -45,19 +45,21 @@ Unzip the .zip file in convenient location.
 Running the Server (Windows)
 ============================
 
+Shut down any other AllStar servers that use the same IAX port number or ASL node number.
+
 Open a command window and run the Ampersand.exe executable. This is a console application.
 
 Point you browser to http://127.0.0.1:8080 to see the user interface (or other port
 if you have changed the default).
 
-Command-line options should be used if you want to override defaults:
+These command-line options can be used if you want to override defaults:
 
 * --httport (defaults to 8080).  Used to change the port that the web UI runs on.
 * --config (defaults $USERPROFILE/amp-win.json). Used to change the location of the configuration file.
 * --trace Used to turn on extended network tracing.
 
 Setup/Configuration (Windows)
-===========================
+============================
 
 Press the "Configuration" tab at the top of the screen to get to the configuration screen
 that looks like this:
@@ -65,7 +67,7 @@ that looks like this:
 ![Amp2](amp-server-config.jpg)
 
 This configuration should be very consistent with that used on the ASL system. Fill 
-in your node number, password, and IAX port number. All other defaults should be enough to get your started.
+in your node number, password, and IAX port number. All other defaults should be enough to get you started.
 
 [!IMPORTANT]
 At the moment there is no support for selecting audio input/output devices on the 
