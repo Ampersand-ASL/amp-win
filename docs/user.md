@@ -17,8 +17,8 @@ Network Setup (IPv4)
 ====================
 
 There are other detailed sources of information about ASL network configuration so 
-I won't repeat everything here. It's no different from what is required 
-for Asterisk. Bottom line:
+I won't repeat everything here. It's **no different from what is required 
+for Asterisk or the IaxRpt phone**. Bottom line:
 
 * Make sure you are clear on what IAX (UDP) port your node is using. This assignment
 happens on the [ASL Portal](https://www.allstarlink.org/portal/servers.php). UDP port 4569 is the common default.
