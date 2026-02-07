@@ -52,7 +52,7 @@ if you have changed the default).
 Command-line options should be used if you want to override defaults:
 
 * --httport (defaults to 8080).  Used to change the port that the web UI runs on.
-* --config (defaults $HOME/amp-server.json). Used to change the location of the configuration file.
+* --config (defaults $USERPROFILE/amp-win.json). Used to change the location of the configuration file.
 * --trace Used to turn on extended network tracing.
 
 Work In Process (Windows)
