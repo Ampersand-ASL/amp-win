@@ -1,6 +1,16 @@
+This is the repo that builds a Windows server that supports linking between radios and nodes on the ASL network. 
+
+[Most of the Ampersand project documentation is here](https://mackinnon.info/ampersand/).
+
+> [!IMPORTANT]
+> **If you are just looking to install/run the server, you probably want to</span> [start here](https://github.com/Ampersand-ASL/amp-win/blob/main/docs/user.md)!**
 
 # Setup MINGW Environment
 
+Ampersand is developed using the MinGW environment on Windows. Once MinGW is 
+setup the build process is almost identical to that on Linux.
+
+        # Some package prerequisites:
         pacman -S mingw-w64-ucrt-x86_64-gcc
         pacman -S mingw-w64-ucrt-x86_64-curl
         pacman -S make zip
