@@ -1,6 +1,6 @@
 # Ampersand Server User/Install Documentation
 
-At the moment the Ampersand Server (amp-server) provides a basic [All Star Link](https://www.allstarlink.org/) node
+At the moment the Ampersand Server provides a basic [All Star Link](https://www.allstarlink.org/) node
 for desktop radio-less use. Future releases will enable more functionality. Send
 comments/questions to Bruce MacKinnon (KC1FSZ) using the e-mail address in [QRZ](https://www.qrz.com/db/KC1FSZ).
 
