@@ -44,9 +44,10 @@ Unzip the .zip file in convenient location.
 Running the Server (Windows)
 ============================
 
-Run the amp-win.exe executable.
+Open a command window and run the amp-win.exe executable. This is a console application.
 
-Point you browser to http://127.0.0.1:8080
+Point you browser to http://127.0.0.1:8080 to see the user interface (or other port
+if you have changed the default).
 
 Command-line options should be used if you want to override defaults:
 
