@@ -3,7 +3,7 @@
 
         pacman -S mingw-w64-ucrt-x86_64-gcc
         pacman -S mingw-w64-ucrt-x86_64-curl
-        pacman -S make
+        pacman -S make zip
         # Needed to get the xxd command
         pacman -S vim
         # This was needed to get GIT to remember credentials. Probably
@@ -17,7 +17,14 @@
         mkdir build
         cd build
         cmake ..
-        make main        
+        make amp-win        
+
+# Packaging the Windows Server
+
+        export AMP_WIN_VERSION=20260207
+        export AMP_ARCH=$(uname -m)
+        scripts/make-package.sh
+        # Move the .zip file to S3
 
 # Sound
 

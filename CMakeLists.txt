@@ -19,7 +19,7 @@ set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 23)
 project(amp-win C CXX ASM)
 
-add_compile_options(-fstack-protector-all -Wall -Wpedantic -g)
+add_compile_options(-DCURL_STATICLIB -fstack-protector-all -Wall -Wpedantic -g)
 
 # ----- Make resource objects ------------------------------------------------
 
@@ -72,7 +72,7 @@ add_custom_command(
 
 # ----- The Web UI version ---------------------------------------------------
 
-add_executable(main
+add_executable(amp-win
   src/main.cpp
   src/config-handler.cpp
   src/service-thread.cpp
@@ -107,6 +107,7 @@ add_executable(main
   kc1fsz-tools-cpp/src/DTMFDetector2.cpp
   kc1fsz-tools-cpp/src/MicroDNS.cpp
   kc1fsz-tools-cpp/src/StdPollTimer.cpp
+  kc1fsz-tools-cpp/src/fixed_math.cpp  
   kc1fsz-tools-cpp/src/linux/StdClock.cpp
   kc1fsz-tools-cpp/src/win32/Win32MTLog.cpp
   kc1fsz-tools-cpp/src/md5/md5c.c
@@ -134,24 +135,26 @@ add_executable(main
   ${OBJECT2}
 )
 
-target_include_directories(main PRIVATE src)
-target_include_directories(main PRIVATE include)
-target_include_directories(main PRIVATE kc1fsz-tools-cpp/include)
-target_include_directories(main PRIVATE itu-g711-codec/src)
-target_include_directories(main PRIVATE cmsis-dsp-mock/include)
-target_include_directories(main PRIVATE amp-core/src)
-target_include_directories(main PRIVATE amp-core/include)
-target_include_directories(main PRIVATE kc1fsz-sdrc/sw/include)
-target_include_directories(main PRIVATE kc1fsz-sdrc/sw/src)
-target_include_directories(main PRIVATE ed25519/src)
-target_include_directories(main PRIVATE json/include)
-target_include_directories(main PRIVATE cpp-httplib)
-target_include_directories(main PRIVATE argparse/include)
+target_include_directories(amp-win PRIVATE src)
+target_include_directories(amp-win PRIVATE include)
+target_include_directories(amp-win PRIVATE kc1fsz-tools-cpp/include)
+target_include_directories(amp-win PRIVATE itu-g711-codec/src)
+target_include_directories(amp-win PRIVATE cmsis-dsp-mock/include)
+target_include_directories(amp-win PRIVATE amp-core/src)
+target_include_directories(amp-win PRIVATE amp-core/include)
+target_include_directories(amp-win PRIVATE kc1fsz-sdrc/sw/include)
+target_include_directories(amp-win PRIVATE kc1fsz-sdrc/sw/src)
+target_include_directories(amp-win PRIVATE ed25519/src)
+target_include_directories(amp-win PRIVATE json/include)
+target_include_directories(amp-win PRIVATE cpp-httplib)
+target_include_directories(amp-win PRIVATE argparse/include)
 
-target_link_libraries(main -lws2_32 -lcurl -lole32)
-target_link_options(main PRIVATE -mwindows)
+target_link_options(amp-win PRIVATE -static-libgcc -static-libstdc++)
 # Needed to expand the size of the stack in the MinGW environment
-target_link_options(main PRIVATE -Wl,--stack,4096000)
+target_link_options(amp-win PRIVATE -Wl,--stack,4096000)
+target_link_libraries(amp-win -lws2_32 -lole32)
+# Created using:  pkg-config.exe --libs --static libcurl
+target_link_libraries(amp-win -static -lcurl -lssl -lcrypto -lz -lwldap32 -lws2_32 -liphlpapi -lbcrypt -ladvapi32 -lcrypt32 -lsecur32 -lssh2 -lws2_32 -lz -lbrotlidec -lbrotlicommon -lzstd -lnghttp2 -lngtcp2 -lngtcp2_crypto_ossl -L/lib -lssl -lcrypto -lws2_32 -lgdi32 -lcrypt32 -lnghttp3 -lpsl -lunistring -lws2_32 -liconv -lidn2 -liconv -lunistring)
 
 # ----- hello-w32 ----------------------------------------------------
 
