@@ -8,10 +8,12 @@ This is experimental work that explores the potential of ASL linking
 without the use of the Asterisk PBX system. [Project documentation is here](https://mackinnon.info/ampersand/). 
 
 All of the testing of this system is happening on:
-* Windows 11 (64-bit)
+* Windows 10 and Windows 11 (64-bit)
 * LogiTech Logi Zone 750 USB headset
 
 The [change log is located here](../CHANGELOG.md). I try to keep it up to date.
+
+Thanks to Frank (KG9M) for his assistance with design and testing of this system.
 
 Network Setup (IPv4)
 ====================
@@ -38,7 +40,7 @@ Network Setup (IPv6)
 Installation Instructions (Windows)
 ===================================
 
-Download the latest package from here: [https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260207-x86_64.zip](https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260207-x86_64.zip).
+Download the latest package from here: [https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260209-x86_64.zip](https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260209-x86_64.zip).
 
 Unzip the .zip file in convenient location.
 

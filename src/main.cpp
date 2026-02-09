@@ -52,7 +52,7 @@ using namespace std;
 using namespace kc1fsz;
 
 // ### TODO: FIGURE OUT HOW TO MAKE THIS AUTOMATIC
-static const char* VERSION = "20260207.0";
+static const char* VERSION = "20260209.0";
 const char* const GIT_HASH = "?";
 static const char* PUBLIC_USER = "radio";
 
@@ -137,7 +137,7 @@ int main(int argc, const char** argv) {
     // This is the router (aka "bus") that passes Message objects between the rest 
     // of the components in the system. You'll see that everything else below is
     // wired to the router one way or the other.
-    threadsafequeue2<Message> respQueue;
+    threadsafequeue2<MessageCarrier> respQueue;
     // A wrapper that makes the response queue look like a MessageConsumer
     QueueConsumer respQueueConsumer(respQueue);
 

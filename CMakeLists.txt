@@ -69,6 +69,24 @@ add_custom_command(
     DEPENDS ${RESOURCE2}
 )
 
+# In order to simplify distribution, the Windows binary incorporates the
+# CA CERTS file as a static resources. This is downloaded from the CURL
+# website, which is in turn refreshed from Mozilla.
+# 
+# See: https://curl.se/docs/caextract.html
+# 
+# What happens here is that we download the .pem file and then turn it 
+# into a static C array using xxd.
+#
+# The array is called "curl_cacerts."
+#
+add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cacerts.h
+  COMMAND wget https://curl.se/ca/cacert.pem -O ${CMAKE_CURRENT_BINARY_DIR}/cacerts.pem
+  COMMAND xxd -n curl_cacerts -i ${CMAKE_CURRENT_BINARY_DIR}/cacerts.pem ${CMAKE_CURRENT_BINARY_DIR}/cacerts.h
+  COMMENT "Fetching CACERTS"
+  VERBATIM
+)
+add_custom_target(cacerts DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/cacerts.h)
 
 # ----- The Web UI version ---------------------------------------------------
 
@@ -129,11 +147,13 @@ add_executable(amp-win
   ed25519/src/sc.c
   ed25519/src/sha512.c
   ed25519/src/verify.c
+  cacerts.h
 # Here is where the resources are added to the binary
   ${OBJECT0}
   ${OBJECT1}
   ${OBJECT2}
 )
+add_dependencies(amp-win cacerts)
 
 target_include_directories(amp-win PRIVATE src)
 target_include_directories(amp-win PRIVATE include)
@@ -148,6 +168,8 @@ target_include_directories(amp-win PRIVATE ed25519/src)
 target_include_directories(amp-win PRIVATE json/include)
 target_include_directories(amp-win PRIVATE cpp-httplib)
 target_include_directories(amp-win PRIVATE argparse/include)
+# Needed for the cacert.h
+target_include_directories(amp-win PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_options(amp-win PRIVATE -static-libgcc -static-libstdc++)
 # Needed to expand the size of the stack in the MinGW environment

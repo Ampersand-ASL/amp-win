@@ -31,7 +31,7 @@ setup the build process is almost identical to that on Linux.
 
 # Packaging the Windows Server
 
-        export AMP_WIN_VERSION=20260207
+        export AMP_WIN_VERSION=20260209
         export AMP_ARCH=$(uname -m)
         scripts/make-package.sh
         # Move the .zip file to S3
