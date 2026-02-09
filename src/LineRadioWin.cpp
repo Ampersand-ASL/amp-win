@@ -185,13 +185,19 @@ unsigned LineRadioWin::_playThread() {
 
     IMMDevice* playAudioDevice;
     hr = deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &playAudioDevice);
-    assert(hr == S_OK);
+    if (!(hr == S_OK)) {
+        _log.error("No audio playback device detected (1)");
+        return 0;
+    }
 
     deviceEnumerator->Release();
 
     IAudioClient2* playAudioClient;
     hr = playAudioDevice->Activate(__uuidof(IAudioClient2), CLSCTX_ALL, nullptr, (LPVOID*)(&playAudioClient));
-    assert(hr == S_OK);
+    if (!(hr == S_OK)) {
+        _log.error("No audio playback device detected (2)");
+        return 0;
+    }
 
     playAudioDevice->Release();
     
@@ -320,19 +326,27 @@ unsigned LineRadioWin::_captureThread() {
 
     HRESULT hr;
 
+    // #### TODO: Stop leaking interfaces
+
     IMMDeviceEnumerator* deviceEnumerator;
     hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (LPVOID*)(&deviceEnumerator));
     assert(hr == S_OK);
 
     IMMDevice* captureAudioDevice;
     hr = deviceEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &captureAudioDevice);
-    assert(SUCCEEDED(hr));
+    if (!SUCCEEDED(hr)) {
+        _log.error("No audio capture device detected (1)");
+        return 0;
+    }
 
     deviceEnumerator->Release();
 
     IAudioClient2* captureAudioClient;
     hr = captureAudioDevice->Activate(__uuidof(IAudioClient2), CLSCTX_ALL, nullptr, (LPVOID*)(&captureAudioClient));
-    assert(hr == S_OK);
+    if (!(hr == S_OK)) {
+        _log.error("No audio capture device detected (2)");
+        return 0;
+    }
 
     captureAudioDevice->Release();
     
