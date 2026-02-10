@@ -81,6 +81,25 @@ Here's what my settings look like in the Windows control panel:
 
 ![Windows Sound](win-sound.jpg)
 
+### Favorites Configuration
+
+A user-defined list of frequently-called nodes can be configured. 
+
+![Favorites 2](fav2.jpg)
+
+This list is entered on the Configuration Tab. The list should be comma-separated
+with a colon between the node number and text description.  For example:
+
+    2002:ASL Parrot,61057:ASL Parrot,672731:AMP Hub,27339:East Cost Reflector,51018:W6EK SFARC
+
+![Favorites 1](fav1.jpg)
+
+Be sure to press "Save" at the bottom of the screen after making a configuration change.
+
+
+
+
+
 Network Debugging Hints
 =======================
 
