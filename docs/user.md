@@ -96,10 +96,6 @@ with a colon between the node number and text description.  For example:
 
 Be sure to press "Save" at the bottom of the screen after making a configuration change.
 
-
-
-
-
 Network Debugging Hints
 =======================
 
@@ -120,14 +116,42 @@ first starts up your calls may not be accepted. Wait about 10 minutes and try ag
 information about whether (a) your node is registered and (b) whether your 
 node is reachable from the outside.
 
+Audio Level Hints
+=================
+
+Setting audio levels can be tricky because of the many variables involved. There
+are two things that need to be adjusted.
+
+**The audio that you send to the AllStar network** which comes from either (a) your 
+radio receiver or (b) your microphone on a radio-less node. This level is displayed
+on the "USB RX" line of the level meter on the Home tab. It is important to adjust 
+your node to avoid clipping of this audio. A good target is around -6dBFS peak.
+
+**The audio that you receive from the AllStar network** which is sent to either (a)
+your radio transmitter or (b) your speaker on a radio-less node. This level is 
+displayed on the "USB TX" line of the level meter on the Home tab. It is important
+to adjust your system to avoid excessive deviation on a transmitter. 
+
+Use the 61057 parrot to test audio and get feedback on your level. Good receive audio
+should peak around -6dB. 
+
+[!NOTE]
+The terminology can be counter-intuitive to users of radio-less nodes
+since they typically think of the audio that comes from their microphone as "transmit" 
+audio. Keep in mind that the terms are defined from the perspective of a radio-connected
+system. When you key the microphone on a radio-less node the level being displayed
+is what is being **received** from the microphone connection.
+
 Work In Process (Windows)
 =========================
 
 _NOTE: I'm not an expert on Windows software distribution so any input will
 be appreciated!_
 
-* Provide instructions for making a Windows service.
-* Write log to a file in a good location.
+* Implement the stats API so that the node shows up on the ASL stats page like this: [https://stats.allstarlink.org/stats/51018)](https://stats.allstarlink.org/stats/51018).
+* Provide instructions for making a Windows Service for people who want to leave
+the server running all the time.
+* Write the log to a file in a good location.
 
 Asking For Help
 ===============
