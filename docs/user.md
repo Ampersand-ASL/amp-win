@@ -135,8 +135,8 @@ to adjust your system to avoid excessive deviation on a transmitter.
 Use the 61057 parrot to test audio and get feedback on your level. Good receive audio
 should peak around -6dB. 
 
-[!NOTE]
-The terminology can be counter-intuitive to users of radio-less nodes
+> [!NOTE]
+> The terminology can be counter-intuitive to users of radio-less nodes
 since they typically think of the audio that comes from their microphone as "transmit" 
 audio. Keep in mind that the terms are defined from the perspective of a radio-connected
 system. When you key the microphone on a radio-less node the level being displayed
