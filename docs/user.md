@@ -152,6 +152,7 @@ be appreciated!_
 * Provide instructions for making a Windows Service for people who want to leave
 the server running all the time.
 * Write the log to a file in a good location.
+* Create a more sophisticated way to select audio input/output devices.
 
 Asking For Help
 ===============
