@@ -60,10 +60,15 @@ These command-line options can be used if you want to override defaults:
 
 * --httport (defaults to 8080).  Used to change the port that the web UI runs on.
 * --httppwd (defaults to none).  Used to set the password for access to the web UI. Username
-is always "user."  Please pay attention to shell quoting rules when using passwords that 
+is always **user**.  Please pay attention to shell quoting rules when using passwords that 
 contain special characters.
 * --config (defaults $USERPROFILE/amp-win.json). Used to change the location of the configuration file.
 * --trace Used to turn on extended network tracing.
+
+The --httppwd option us useful in cases where the Ampersand server is running 
+on an insecure network. The command would look like this:
+
+    Ampersand --httppwd secret123
 
 Setup/Configuration (Windows)
 ============================
