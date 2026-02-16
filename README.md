@@ -22,6 +22,8 @@ setup the build process is almost identical to that on Linux.
 
 # Building the Windows Server
 
+Builds are performed from the bash prompt using the MinGW environment.
+
         git clone https://github.com/Ampersand-ASL/amp-win.git
         cd amp-win
         mkdir build
@@ -31,7 +33,9 @@ setup the build process is almost identical to that on Linux.
 
 # Packaging the Windows Server
 
-        export AMP_WIN_VERSION=20260209
+Packaging is performed from the bash prompt using the MinGW environment.
+
+        export AMP_WIN_VERSION=20260216
         export AMP_ARCH=$(uname -m)
         scripts/make-package.sh
         # Move the .zip file to S3

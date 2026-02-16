@@ -13,6 +13,8 @@ All of the testing of this system is happening on:
 
 The [change log is located here](../CHANGELOG.md). I try to keep it up to date.
 
+# Credits
+
 Thanks to Frank (KG9M) for his assistance with design and testing of this system.
 
 Network Setup (IPv4)
@@ -40,7 +42,7 @@ Network Setup (IPv6)
 Installation Instructions (Windows)
 ===================================
 
-Download the latest package from here: [https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260209-x86_64.zip](https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260209-x86_64.zip).
+Download the latest package from here: [https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260216-x86_64.zip](https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260216-x86_64.zip).
 
 Unzip the .zip file in convenient location.
 
@@ -57,6 +59,9 @@ if you have changed the default).
 These command-line options can be used if you want to override defaults:
 
 * --httport (defaults to 8080).  Used to change the port that the web UI runs on.
+* --httppwd (defaults to none).  Used to set the password for access to the web UI. Username
+is always "user."  Please pay attention to shell quoting rules when using passwords that 
+contain special characters.
 * --config (defaults $USERPROFILE/amp-win.json). Used to change the location of the configuration file.
 * --trace Used to turn on extended network tracing.
 

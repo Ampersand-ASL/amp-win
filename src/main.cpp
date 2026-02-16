@@ -48,13 +48,24 @@
 #include "LineRadioWin.h"
 #include "LocalRegistryStd.h"
 
+#define MAX_CALLS (8)
+
+// Line IDs
+#define LINE_ID_IAX (1)
+#define LINE_ID_BRIDGE (10)
+#define LINE_ID_STATS (12)
+
 using namespace std;
 using namespace kc1fsz;
 
 // ### TODO: FIGURE OUT HOW TO MAKE THIS AUTOMATIC
-static const char* VERSION = "20260209.0";
+static const char* VERSION = "20260216.0";
 const char* const GIT_HASH = "?";
 static const char* PUBLIC_USER = "radio";
+
+// These are potentially large structure, so keeping it off the stack
+static amp::BridgeCall callBank[MAX_CALLS];
+static LineIAX2::Call iaxCallBank[MAX_CALLS];
 
 int main(int argc, const char** argv) {
 
@@ -108,6 +119,11 @@ int main(int argc, const char** argv) {
         .default_value(8080)
         .help("Port number for HTTP UI server");
 
+    string uiPwd;
+    program.add_argument("--httppwd")
+        .help("Password for HTTP UI/API authentication")
+        .store_into(uiPwd);
+
     program.add_argument("--trace")
         .help("Turn on network tracing")
         .default_value(false)
@@ -145,15 +161,23 @@ int main(int argc, const char** argv) {
 
     copyableatomic<std::string> pokeAddr;
 
+    // Setup a way to pass messages over to the service thread
+    threadsafequeue2<MessageCarrier> serviceThreadReqQueue;
+    QueueConsumer serviceThreadReqQueueConsumer(serviceThreadReqQueue);
+    // Pass message from local router up to the service thread
+    router.addRoute(&serviceThreadReqQueueConsumer, LINE_ID_STATS);
+
     // Get the service thread running. This handles non-time-sensitive
     // stuff like registration, stats, etc.
     std::thread serviceThread(service_thread, &cfgFileName, &log, VERSION, &pokeAddr);
 
     // The Bridge is what provides the audio conference capability. The various 
     // Lines connect to the Bridge.
-    amp::Bridge bridge10(log, traceLog, clock, router, amp::BridgeCall::Mode::NORMAL, 10, 
-        0, 0, 0, 1);
-    router.addRoute(&bridge10, 10);
+    amp::Bridge bridge10(log, traceLog, clock, router, amp::BridgeCall::Mode::NORMAL, 
+        LINE_ID_BRIDGE, 
+        0, 0, 0, LINE_ID_IAX, LINE_ID_STATS,
+        callBank, MAX_CALLS);
+    router.addRoute(&bridge10, LINE_ID_BRIDGE);
 
     // This is the Line that connects to the USB sound interface
     LineRadioWin radio2(log, clock, router, 2, 1, 10, 1);
@@ -161,17 +185,20 @@ int main(int argc, const char** argv) {
 
     // This is the Line that makes the IAX2 network connection
     LocalRegistryStd locReg;
-    LineIAX2 iax2Channel1(log, traceLog, clock, 1, router, 0, 0, &locReg, 10, PUBLIC_USER);
+    LineIAX2 iax2Channel1(log, traceLog, clock, 1, router, 0, 0, &locReg, 10, PUBLIC_USER,
+        iaxCallBank, MAX_CALLS);
     router.addRoute(&iax2Channel1, 1);
     if (program["--trace"] == true)
         iax2Channel1.setTrace(true);
 
     // This is the HTTP server that provides the UI
-    amp::WebUi webUi(log, clock, respQueueConsumer, uiPort, 1, 2, cfgFileName.c_str(), VERSION,
-        traceLog);
+    amp::WebUi webUi(log, clock, uiPort, 1, 2, cfgFileName.c_str(), 
+        VERSION, traceLog);
     // This allow the WebUi to watch all traffic and pull out the things 
     // that are relevant for status display.
     router.addRoute(&webUi, MultiRouter::BROADCAST);
+    webUi.setUiPWd(uiPwd);
+
     // Get the UI thread going
     std::thread webUiThread(amp::WebUi::uiThread, &webUi, &respQueueConsumer);
 

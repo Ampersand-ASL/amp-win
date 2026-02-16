@@ -140,7 +140,7 @@ void service_thread(const std::string* cfgFileName, kc1fsz::Log* loga,
     );
 
     // Main loop        
-    Runnable2* tasks2[] = { &registerTask, &cfgPoller, &timer1 };
+    Runnable2* tasks2[] = { &registerTask, &statsTask, &cfgPoller, &timer1 };
     EventLoop::run(log, clock, 0, 0, tasks2, std::size(tasks2));
 
     // #### TODO: NEED A CLEAN WAY TO EXIT THIS THREAD

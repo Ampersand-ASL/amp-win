@@ -110,6 +110,7 @@ add_executable(amp-win
   amp-core/src/Transcoder_SLIN_48K.cpp
   amp-core/src/Transcoder_SLIN_16K.cpp
   amp-core/src/Transcoder_SLIN_8K.cpp
+  amp-core/src/Transcoder_G726.cpp
   amp-core/src/Bridge.cpp
   amp-core/src/BridgeCall.cpp
   amp-core/src/BridgeIn.cpp
@@ -147,6 +148,10 @@ add_executable(amp-win
   ed25519/src/sc.c
   ed25519/src/sha512.c
   ed25519/src/verify.c
+  g726-codec/src/g711.c
+  g726-codec/src/g72x.c
+  g726-codec/src/g726_32.c
+  base64.c/base64.c
   cacerts.h
 # Here is where the resources are added to the binary
   ${OBJECT0}
@@ -168,6 +173,9 @@ target_include_directories(amp-win PRIVATE ed25519/src)
 target_include_directories(amp-win PRIVATE json/include)
 target_include_directories(amp-win PRIVATE cpp-httplib)
 target_include_directories(amp-win PRIVATE argparse/include)
+target_include_directories(amp-win PRIVATE g726-codec/src)
+target_include_directories(amp-win PRIVATE base64.c)
+
 # Needed for the cacert.h
 target_include_directories(amp-win PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 

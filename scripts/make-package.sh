@@ -1,6 +1,6 @@
 #!/bin/bash
 # Clean up any stuff from previous builds
-rm /tmp/amp-win-${AMP_WIN_VERSION}-${AMP_ARCH}.zip
+rm -f /tmp/amp-win-${AMP_WIN_VERSION}-${AMP_ARCH}.zip
 rm -rf /tmp/amp-win
 mkdir -p /tmp/amp-win
 # Install
