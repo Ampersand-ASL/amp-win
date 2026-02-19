@@ -4,6 +4,9 @@ At the moment the Ampersand Server provides a basic [All Star Link](https://www.
 for desktop radio-less use. Future releases will enable more functionality. Send
 comments/questions to Bruce MacKinnon (KC1FSZ) using the e-mail address in [QRZ](https://www.qrz.com/db/KC1FSZ).
 
+To avoid any confusion: this program provides **a full ASL node** that is capable of placing
+outgoing calls and receiving incoming calls. You do not need to have a second Linux server.
+
 This is experimental work that explores the potential of ASL linking 
 without the use of the Asterisk PBX system. [Project documentation is here](https://mackinnon.info/ampersand/). 
 
