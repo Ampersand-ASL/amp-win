@@ -43,6 +43,7 @@
 #include "ConfigPoller.h"
 #include "WebUi.h"
 #include "TraceLog.h"
+#include "QueueConsumer.h"
 
 #include "config-handler.h"
 #include "LineRadioWin.h"
@@ -59,7 +60,7 @@ using namespace std;
 using namespace kc1fsz;
 
 // ### TODO: FIGURE OUT HOW TO MAKE THIS AUTOMATIC
-static const char* VERSION = "20260216.0";
+static const char* VERSION = "20260222.0";
 const char* const GIT_HASH = "?";
 static const char* PUBLIC_USER = "radio";
 
