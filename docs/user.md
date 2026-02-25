@@ -167,11 +167,10 @@ Work In Process (Windows)
 _NOTE: I'm not an expert on Windows software distribution so any input will
 be appreciated!_
 
-* Implement the stats API so that the node shows up on the ASL stats page like this: [https://stats.allstarlink.org/stats/51018)](https://stats.allstarlink.org/stats/51018).
+* Create a more sophisticated way to select audio input/output devices.
 * Provide instructions for making a Windows Service for people who want to leave
 the server running all the time.
 * Write the log to a file in a good location.
-* Create a more sophisticated way to select audio input/output devices.
 
 Asking For Help
 ===============
