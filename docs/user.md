@@ -14,6 +14,9 @@ All of the testing of this system is happening on:
 * Windows 10 and Windows 11 (64-bit)
 * LogiTech Logi Zone 750 USB headset
 
+If you are looking for a cloud-based "virtual or "hub" server, the [Ampersand Hub Project](https://github.com/Ampersand-ASL/amp-hub) is a 
+better choice for you.
+
 The [change log is located here](../CHANGELOG.md). I try to keep it up to date.
 
 # Credits
@@ -45,7 +48,7 @@ Network Setup (IPv6)
 Installation Instructions (Windows)
 ===================================
 
-Download the latest package from here: [https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260216-x86_64.zip](https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260216-x86_64.zip).
+Download the latest package from here: [https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260225-x86_64.zip](https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260225-x86_64.zip).
 
 Unzip the .zip file in convenient location.
 

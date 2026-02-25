@@ -49,29 +49,33 @@
 #include "ConfigPoller.h"
 #include "ThreadUtil.h"
 #include "TimerTask.h"
+#include "Message.h"
 
 #include "service-thread.h"
 
 using namespace std;
-using namespace kc1fsz;
 
 #ifndef _WIN32
 static const char* POKE_HOST_NAME = "61057.nodes.allstarlink.org";
 static int POKE_PORT = 4570;
 #endif 
 
+namespace kc1fsz {
+    namespace amp {
+
 void service_thread(const std::string* cfgFileName, kc1fsz::Log* loga,
-    const char* version, copyableatomic<std::string>* pokeAddr) {
+    const char* version, copyableatomic<std::string>* pokeAddr,
+    threadsafequeue2<MessageCarrier>* reqQueue) {
 
     Log& log = *loga;
-
-    amp::setThreadName("amp-svc");
+    
+    setThreadName("amp-svc");
 
     log.info("service_thread start");
 
     // Sleep waiting to change real-time status
     std::this_thread::sleep_for(std::chrono::seconds(10));
-    amp::lowerThreadPriority();
+    lowerThreadPriority();
 
     StdClock clock;
 
@@ -79,7 +83,20 @@ void service_thread(const std::string* cfgFileName, kc1fsz::Log* loga,
 
     StatsTask statsTask(log, clock, version);
 
-    amp::ConfigPoller cfgPoller(log, cfgFileName->c_str(), 
+    // This timer task checks for messages on the request queue 
+    // and distributes them appropriately.
+    TimerTask timer2(log, clock, 2, 
+        [&log, reqQueue, &statsTask]() {
+            MessageCarrier msg;
+            if (reqQueue->try_pop(msg, 10)) {
+                // The node list for stats reporting
+                if (msg.isSignal(Message::SignalType::LINK_REPORT))
+                    statsTask.setNodeList((const char*)msg.body());
+            }
+        }
+    );
+
+    ConfigPoller cfgPoller(log, cfgFileName->c_str(), 
         // This function will be called on any update to the configuration document.
         [&log, &registerTask, &statsTask](const json& cfg) {
             try {
@@ -140,8 +157,11 @@ void service_thread(const std::string* cfgFileName, kc1fsz::Log* loga,
     );
 
     // Main loop        
-    Runnable2* tasks2[] = { &registerTask, &statsTask, &cfgPoller, &timer1 };
+    Runnable2* tasks2[] = { &registerTask, &statsTask, &cfgPoller, &timer1, &timer2 };
     EventLoop::run(log, clock, 0, 0, tasks2, std::size(tasks2));
 
     // #### TODO: NEED A CLEAN WAY TO EXIT THIS THREAD
+}
+
+    }
 }

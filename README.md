@@ -35,7 +35,7 @@ Builds are performed from the bash prompt using the MinGW environment.
 
 Packaging is performed from the bash prompt using the MinGW environment.
 
-        export AMP_WIN_VERSION=20260216
+        export AMP_WIN_VERSION=20260225
         export AMP_ARCH=$(uname -m)
         scripts/make-package.sh
         # Move the .zip file to S3

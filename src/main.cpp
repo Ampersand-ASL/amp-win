@@ -44,6 +44,7 @@
 #include "WebUi.h"
 #include "TraceLog.h"
 #include "QueueConsumer.h"
+#include "Message.h"
 
 #include "config-handler.h"
 #include "LineRadioWin.h"
@@ -171,7 +172,8 @@ int main(int argc, const char** argv) {
 
     // Get the service thread running. This handles non-time-sensitive
     // stuff like registration, stats, etc.
-    std::thread serviceThread(service_thread, &cfgFileName, &log, VERSION, &pokeAddr);
+    std::thread serviceThread(amp::service_thread, &cfgFileName, &log, VERSION, &pokeAddr,
+        &serviceThreadReqQueue);
 
     // The Bridge is what provides the audio conference capability. The various 
     // Lines connect to the Bridge.

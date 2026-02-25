@@ -20,12 +20,22 @@
 
 #include "kc1fsz-tools/Log.h"
 #include "kc1fsz-tools/copyableatomic.h"
+#include "kc1fsz-tools/threadsafequeue2.h"
+
+#include "Message.h"
+
+namespace kc1fsz {
+    namespace amp {
 
 /**
  * @param pokeAddr Gets updated by the service thread for use in 
  * the main thread.
  */
 void service_thread(const std::string* cfgFileName, kc1fsz::Log* log,
-    const char* version, copyableatomic<std::string>* pokeAddr);
+    const char* version, copyableatomic<std::string>* pokeAddr,
+    threadsafequeue2<MessageCarrier>* reqQueue);
+
+    }
+}
 
 

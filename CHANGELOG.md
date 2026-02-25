@@ -1,5 +1,13 @@
 # Change Log
 
+## 2026-02-25
+
+* Problems with the 8K linear CODEC have been addressed.
+* The accessibility of the user interface has been improved. (Thanks
+to Joe KA9OPL for his help on this)
+* Node statistics have been enabled. You should be able to see your node
+using the [ASL stats page like this](https://stats.allstarlink.org/stats/672733).
+
 ## 2026-02-22
 
 * Removed support for SLIN8, having problems.
