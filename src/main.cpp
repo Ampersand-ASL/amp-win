@@ -55,12 +55,13 @@
 #define LINE_ID_IAX (1)
 #define LINE_ID_BRIDGE (10)
 #define LINE_ID_STATS (12)
+#define LINE_ID_SIGNAL_OUT (31)
 
 using namespace std;
 using namespace kc1fsz;
 
 // ### TODO: FIGURE OUT HOW TO MAKE THIS AUTOMATIC
-static const char* VERSION = "20260222.0";
+static const char* VERSION = "20260225.0";
 const char* const GIT_HASH = "?";
 static const char* PUBLIC_USER = "radio";
 
@@ -181,7 +182,7 @@ int main(int argc, const char** argv) {
     router.addRoute(&bridge10, LINE_ID_BRIDGE);
 
     // This is the Line that connects to the USB sound interface
-    LineRadioWin radio2(log, clock, router, 2, 1, 10, 1);
+    LineRadioWin radio2(log, clock, router, 2, 1, 10, 1, LINE_ID_SIGNAL_OUT);
     router.addRoute(&radio2, 2);
 
     // This is the Line that makes the IAX2 network connection

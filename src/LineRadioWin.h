@@ -33,7 +33,7 @@ class LineRadioWin : public LineRadio {
 public:
 
     LineRadioWin(Log&, Clock&, MessageConsumer& consumer, unsigned busId, unsigned callId,
-        unsigned destBusId, unsigned destCallId);
+        unsigned destBusId, unsigned destCallId, unsigned signalDestLineId);
     ~LineRadioWin();
 
     int open(const char* deviceName, const char* hidName, bool echo = false);    

@@ -65,8 +65,9 @@ between the "main" thread and the _captureThread.
 
 */
 LineRadioWin::LineRadioWin(Log& log, Clock& clock, MessageConsumer& consumer, 
-    unsigned busId, unsigned callId, unsigned destBusId, unsigned destCallId)
-:   LineRadio(log, clock, consumer, busId, callId, destBusId, destCallId),
+    unsigned busId, unsigned callId, unsigned destBusId, unsigned destCallId,
+    unsigned signalDestLineId)
+:   LineRadio(log, clock, consumer, busId, callId, destBusId, destCallId, signalDestLineId),
     _run(true),
     _captureEnabled(false) {
 

@@ -1,5 +1,10 @@
 # Change Log
 
+## 2026-02-22
+
+* Removed support for SLIN8, having problems.
+* Improved UI accessibility, particularly the PTT button. Thanks to Joe KA9OPL.
+
 ## 2026-02-16
 
 * The --httppwd command-line option was added to allow a password to be set
