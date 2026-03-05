@@ -137,7 +137,16 @@ int configHandler(Log& log, const json& cfg, WebUi& webUi, LineIAX2& iax2Channel
             }
         }
         */
-        rc = radio2.open(0, 0, false);
+
+        if (!cfg["duplexmode"].is_string())
+            throw invalid_argument("duplexmode is missing/invalid");
+        int duplexMode = std::stoi(cfg["duplexmode"].get<std::string>());
+
+        if (!cfg["echogain"].is_string())
+            throw invalid_argument("echogain is missing/invalid");
+        float echoGainDb = std::stof(cfg["echogain"].get<std::string>());
+
+        rc = radio2.open(0, 0, duplexMode == 1, echoGainDb);
         if (rc < 0) {
             if (rc == -12)
                 log.error("Unable to open sound device, busy");

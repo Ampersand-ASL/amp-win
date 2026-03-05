@@ -5,6 +5,9 @@ This is the repo that builds a Windows server that supports linking between radi
 > [!IMPORTANT]
 > **If you are just looking to install/run the server, you probably want to</span> [start here](https://github.com/Ampersand-ASL/amp-win/blob/main/docs/user.md)!**
 
+> [!IMPORTANT]
+> If you are using the AllStarLink system please [make a dontation](https://www.allstarlink.org/about/donate.php) to support the network. 
+
 # Setup MINGW Environment
 
 Ampersand is developed using the MinGW environment on Windows. Once MinGW is 
@@ -35,7 +38,7 @@ Builds are performed from the bash prompt using the MinGW environment.
 
 Packaging is performed from the bash prompt using the MinGW environment.
 
-        export AMP_WIN_VERSION=20260225
+        export AMP_WIN_VERSION=20260305
         export AMP_ARCH=$(uname -m)
         scripts/make-package.sh
         # Move the .zip file to S3

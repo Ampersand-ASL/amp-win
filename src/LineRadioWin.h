@@ -36,10 +36,9 @@ public:
         unsigned destBusId, unsigned destCallId, unsigned signalDestLineId);
     ~LineRadioWin();
 
-    int open(const char* deviceName, const char* hidName, bool echo = false);    
+    int open(const char* deviceName, const char* hidName, bool echo = false, 
+        float echoGainDb = 0.0);    
     void close();
-
-    void setCos(bool cos);
 
     // ----- MessageConsumer --------------------------------------------------
 

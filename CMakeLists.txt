@@ -101,6 +101,7 @@ add_executable(amp-win
   amp-core/src/Line.cpp
   amp-core/src/LineRadio.cpp
   amp-core/src/LineIAX2.cpp
+  amp-core/src/LineParrot.cpp
   amp-core/src/IAX2FrameFull.cpp
   amp-core/src/IAX2Util.cpp
   amp-core/src/RegisterTask.cpp
@@ -121,6 +122,7 @@ add_executable(amp-win
   amp-core/src/MultiRouter.cpp
   amp-core/src/ThreadUtil.cpp
   amp-core/src/TraceLog.cpp
+  amp-core/src/ProgramUtils.cpp
   kc1fsz-tools-cpp/src/Common.cpp
   kc1fsz-tools-cpp/src/NetUtils.cpp
   kc1fsz-tools-cpp/src/DTMFDetector2.cpp

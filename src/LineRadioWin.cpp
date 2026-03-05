@@ -83,30 +83,27 @@ LineRadioWin::~LineRadioWin() {
     WaitForSingleObject(_captureThreadH, INFINITE);
 }
 
-int LineRadioWin::open(const char* deviceName, const char* hidName, bool echo) {    
-    _open(echo);
+int LineRadioWin::open(const char* deviceName, const char* hidName, bool echo, 
+    float echoGainDb) {    
+    _open(echo, echoGainDb);
     return 0;
 }
 
 void LineRadioWin::close() {
     _close();
 }
-    
-void LineRadioWin::setCos(bool cos) {
-    // This is to stop the audio flow
-    _captureEnabled.store(cos);
-    // Call base class, this will include sending an UNKEY signal
-    _setCosStatus(cos);
-}
+   
 
 void LineRadioWin::consume(const Message& msg) {
+
+    // Some extra stuff done with the COS signals
     if (msg.isSignal(Message::SignalType::COS_ON)) {
-        setCos(true);
+        _captureEnabled.store(true);
     } else if (msg.isSignal(Message::SignalType::COS_OFF)) {
-        setCos(false);
-    } else {
-        LineRadio::consume(msg);
+        _captureEnabled.store(false);
     }
+    
+    LineRadio::consume(msg);
 }
 
 /**

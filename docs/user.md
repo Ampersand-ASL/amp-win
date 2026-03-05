@@ -19,6 +19,9 @@ better choice for you.
 
 The [change log is located here](../CHANGELOG.md). I try to keep it up to date.
 
+> [!IMPORTANT]
+> If you are using the AllStarLink system please [make a dontation](https://www.allstarlink.org/about/donate.php) to support the network. 
+
 # Credits
 
 Thanks to Frank (KG9M) for his assistance with design and testing of this system.
@@ -48,7 +51,7 @@ Network Setup (IPv6)
 Installation Instructions (Windows)
 ===================================
 
-Download the latest package from here: [https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260225-x86_64.zip](https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260225-x86_64.zip).
+Download the latest package from here: [https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260305-x86_64.zip](https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260305-x86_64.zip).
 
 Unzip the .zip file in convenient location.
 
