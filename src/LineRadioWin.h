@@ -53,7 +53,7 @@ protected:
     /**
      * This function is called to do the actual playing of the 48K PCM.
      */
-    void _playPCM48k(int16_t* pcm48k_2, unsigned blockSize);
+    bool _playPCM48k(int16_t* pcm48k_2, unsigned blockSize);
 
 private:
 

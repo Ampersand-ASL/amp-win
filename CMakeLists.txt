@@ -135,6 +135,7 @@ add_executable(amp-win
   itu-g711-codec/src/codec.cpp
   itu-g711-codec/src/Plc.cpp
   cmsis-dsp-mock/src/main.cpp
+  cmsis-dsp-mock/src/main-float.cpp
   kc1fsz-sdrc/sw/src/TestToneGenerator.cpp
   kc1fsz-sdrc/sw/src/IDToneGenerator.cpp
   kc1fsz-sdrc/sw/src/CourtesyToneGenerator.cpp
@@ -187,16 +188,6 @@ target_link_options(amp-win PRIVATE -Wl,--stack,4096000)
 target_link_libraries(amp-win -lws2_32 -lole32)
 # Created using:  pkg-config.exe --libs --static libcurl
 target_link_libraries(amp-win -static -lcurl -lssl -lcrypto -lz -lwldap32 -lws2_32 -liphlpapi -lbcrypt -ladvapi32 -lcrypt32 -lsecur32 -lssh2 -lws2_32 -lz -lbrotlidec -lbrotlicommon -lzstd -lnghttp2 -lngtcp2 -lngtcp2_crypto_ossl -L/lib -lssl -lcrypto -lws2_32 -lgdi32 -lcrypt32 -lnghttp3 -lpsl -lunistring -lws2_32 -liconv -lidn2 -liconv -lunistring)
-
-# ----- hello-w32 ----------------------------------------------------
-
-add_executable(hello-w32
-  src/tests/hello-w32.cpp
-)
-target_include_directories(hello-w32 PRIVATE src)
-target_include_directories(hello-w32 PRIVATE include)
-target_include_directories(hello-w32 PRIVATE kc1fsz-tools-cpp/include)
-target_link_options(hello-w32 PRIVATE -mwindows)
 
 # ----- hello-audio ----------------------------------------------------
 

@@ -123,8 +123,6 @@ bool LineRadioWin::run2() {
         uint32_t nowMs = _clock.time();
         if (_captureCount == 0)
             _captureStartMs = nowMs;
-        // #### TODO: WHAT IS THIS RELATIVE TO?
-        uint32_t idealNowMs = _captureStartMs + (_captureCount * BLOCK_PERIOD_MS);
         _captureCount++;
 
         // Transition detect, the beginning of a capture "run"
@@ -134,7 +132,6 @@ bool LineRadioWin::run2() {
             // the timestamps that will be put on the generated frames.
             _captureStartMs = nowMs;
             _captureCount = 0;
-            idealNowMs = nowMs;
             _captureStart();
         }
 
@@ -144,7 +141,7 @@ bool LineRadioWin::run2() {
         _analyzeCapturedAudio(frame.data(), BLOCK_SIZE_48K);
 
         // Here is where the actual processing of the new block happens
-        _processCapturedAudio(frame.data(), BLOCK_SIZE_48K, nowMs, idealNowMs);
+        _processCapturedAudio(frame.data(), BLOCK_SIZE_48K);
 
         frameCount++;
     }
@@ -154,12 +151,14 @@ bool LineRadioWin::run2() {
 
 // ===== Play Related =========================================================
 
-void LineRadioWin::_playPCM48k(int16_t* pcm48k_2, unsigned blockSize) {  
+bool LineRadioWin::_playPCM48k(int16_t* pcm48k_2, unsigned blockSize) {  
 
     assert(blockSize == BLOCK_SIZE_48K);
 
     // A thread-safe push of the audio onto the play thread
     _playQueueMTSafe.push(PCM16Frame(pcm48k_2, BLOCK_SIZE_48K));
+
+    return true;
 }
 
 // ===== PLAY THREAD ==========================================================
