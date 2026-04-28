@@ -106,7 +106,6 @@ add_executable(amp-win
   amp-core/src/IAX2Util.cpp
   amp-core/src/RegisterTask.cpp
   amp-core/src/StatsTask.cpp
-  amp-core/src/RetransmissionBufferStd.cpp
   amp-core/src/Transcoder_G711_ULAW.cpp
   amp-core/src/Transcoder_SLIN_48K.cpp
   amp-core/src/Transcoder_SLIN_16K.cpp
@@ -132,6 +131,7 @@ add_executable(amp-win
   kc1fsz-tools-cpp/src/linux/StdClock.cpp
   kc1fsz-tools-cpp/src/win32/Win32MTLog.cpp
   kc1fsz-tools-cpp/src/md5/md5c.c
+  kc1fsz-tools-cpp/src/TaggedBuffer.cpp
   itu-g711-codec/src/codec.cpp
   itu-g711-codec/src/Plc.cpp
   cmsis-dsp-mock/src/main.cpp
