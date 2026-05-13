@@ -51,7 +51,7 @@ Network Setup (IPv6)
 Installation Instructions (Windows)
 ===================================
 
-Download the latest package from here: [https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260305-x86_64.zip](https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260305-x86_64.zip).
+Download the latest package from here: [https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260513-x86_64.zip](https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260513-x86_64.zip).
 
 Unzip the .zip file in convenient location.
 
@@ -73,6 +73,7 @@ is always **user**.  Please pay attention to shell quoting rules when using pass
 contain special characters.
 * --config (defaults $USERPROFILE/amp-win.json). Used to change the location of the configuration file.
 * --trace Used to turn on extended network tracing.
+* --capture Used to turn on network packet capture.
 
 The --httppwd option us useful in cases where the Ampersand server is running 
 on an insecure network. The command would look like this:

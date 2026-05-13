@@ -191,7 +191,7 @@ target_link_libraries(amp-win -static -lcurl -lssl -lcrypto -lz -lwldap32 -lws2_
 
 # ----- hello-audio ----------------------------------------------------
 
-add_executable(hello-audio
+add_executable(hello-audio EXCLUDE_FROM_ALL
   src/tests/hello-audio-1.cpp
 )
 target_include_directories(hello-audio PRIVATE src)
@@ -202,7 +202,7 @@ target_link_options(hello-audio PRIVATE -mwindows)
 
 # ----- hello-audio-2 ----------------------------------------------------
 
-add_executable(hello-audio-2
+add_executable(hello-audio-2 EXCLUDE_FROM_ALL
   src/tests/hello-audio-2.cpp
   kc1fsz-tools-cpp/src/linux/StdClock.cpp
 )
@@ -214,7 +214,7 @@ target_link_options(hello-audio-2 PRIVATE -mwindows)
 
 # ----- hello-http-server -------------------------------------------------
 
-add_executable(hello-http-server
+add_executable(hello-http-server EXCLUDE_FROM_ALL
   src/demos/hello-http-server.cpp
   kc1fsz-tools-cpp/src/linux/StdClock.cpp
 )

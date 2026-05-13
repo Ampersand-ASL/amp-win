@@ -66,8 +66,9 @@ between the "main" thread and the _captureThread.
 */
 LineRadioWin::LineRadioWin(Log& log, Clock& clock, MessageConsumer& consumer, 
     unsigned busId, unsigned callId, unsigned destBusId, unsigned destCallId,
-    unsigned signalDestLineId)
-:   LineRadio(log, clock, consumer, busId, callId, destBusId, destCallId, signalDestLineId),
+    unsigned signalDestLineId, unsigned networkDestLineId)
+:   LineRadio(log, clock, consumer, busId, callId, destBusId, destCallId, signalDestLineId, 
+    networkDestLineId),
     _run(true),
     _captureEnabled(false) {
 
@@ -85,14 +86,13 @@ LineRadioWin::~LineRadioWin() {
 
 int LineRadioWin::open(const char* deviceName, const char* hidName, bool echo, 
     float echoGainDb) {    
-    _open(echo, echoGainDb);
+    _signalOpen(echo, echoGainDb);
     return 0;
 }
 
 void LineRadioWin::close() {
-    _close();
+    _signalClose();
 }
-   
 
 void LineRadioWin::consume(const Message& msg) {
 
@@ -151,14 +151,14 @@ bool LineRadioWin::run2() {
 
 // ===== Play Related =========================================================
 
-bool LineRadioWin::_playPCM48k(int16_t* pcm48k_2, unsigned blockSize) {  
+LineRadio::PlayStatus LineRadioWin::_playPCM48k(int16_t* pcm48k_2, unsigned blockSize) {  
 
     assert(blockSize == BLOCK_SIZE_48K);
 
     // A thread-safe push of the audio onto the play thread
     _playQueueMTSafe.push(PCM16Frame(pcm48k_2, BLOCK_SIZE_48K));
 
-    return true;
+    return PlayStatus::STATUS_OK;
 }
 
 // ===== PLAY THREAD ==========================================================

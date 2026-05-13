@@ -62,7 +62,7 @@ using namespace std;
 using namespace kc1fsz;
 
 // ### TODO: FIGURE OUT HOW TO MAKE THIS AUTOMATIC
-static const char* VERSION = "20260427.0";
+static const char* VERSION = "20260513.0";
 const char* const GIT_HASH = "?";
 static const char* PUBLIC_USER = "radio";
 
@@ -132,6 +132,11 @@ int main(int argc, const char** argv) {
         .default_value(false)
         .implicit_value(true);
 
+    program.add_argument("--capture")
+        .help("Turn on network capture")
+        .default_value(false)
+        .implicit_value(true);
+
     try {
         program.parse_args(argc, argv);
     } catch (const std::exception& err) {
@@ -141,6 +146,7 @@ int main(int argc, const char** argv) {
 
     log.info("Using configuration file %s", cfgFileName.c_str());
 
+    /*
     // Create a default/starting config file if this is the first time.
     if (!filesystem::exists(cfgFileName)) {
         log.info("Creating default configuration");
@@ -152,6 +158,7 @@ int main(int argc, const char** argv) {
             std::exit(-3);
         }
     }
+    */
 
     // This is the router (aka "bus") that passes Message objects between the rest 
     // of the components in the system. You'll see that everything else below is
@@ -184,7 +191,7 @@ int main(int argc, const char** argv) {
     router.addRoute(&bridge10, LINE_ID_BRIDGE);
 
     // This is the Line that connects to the USB sound interface
-    LineRadioWin radio2(log, clock, router, 2, 1, 10, 1, LINE_ID_SIGNAL_OUT);
+    LineRadioWin radio2(log, clock, router, 2, 1, 10, 1, LINE_ID_SIGNAL_OUT, LINE_ID_IAX);
     router.addRoute(&radio2, 2);
 
     // This is the Line that makes the IAX2 network connection
@@ -194,6 +201,8 @@ int main(int argc, const char** argv) {
     router.addRoute(&iax2Channel1, 1);
     if (program["--trace"] == true)
         iax2Channel1.setTrace(true);
+    if (program["--capture"] == true)
+        iax2Channel1.setCapture(true);
 
     // This is the HTTP server that provides the UI
     amp::WebUi webUi(log, clock, uiPort, 1, 2, cfgFileName.c_str(), 

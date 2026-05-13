@@ -33,7 +33,8 @@ class LineRadioWin : public LineRadio {
 public:
 
     LineRadioWin(Log&, Clock&, MessageConsumer& consumer, unsigned busId, unsigned callId,
-        unsigned destBusId, unsigned destCallId, unsigned signalDestLineId);
+        unsigned destBusId, unsigned destCallId, unsigned signalDestLineId, 
+        unsigned networkDestLineId);
     ~LineRadioWin();
 
     int open(const char* deviceName, const char* hidName, bool echo = false, 
@@ -53,7 +54,7 @@ protected:
     /**
      * This function is called to do the actual playing of the 48K PCM.
      */
-    bool _playPCM48k(int16_t* pcm48k_2, unsigned blockSize);
+    LineRadio::PlayStatus _playPCM48k(int16_t* pcm48k_2, unsigned blockSize);
 
 private:
 

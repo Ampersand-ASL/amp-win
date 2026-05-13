@@ -1,5 +1,11 @@
 # Change Log
 
+## 20250512
+
+* Cleaned up a logic error with re-transmit, not holding all messages (except ACK)
+in the retransmit buffer, regardless of whether ACK is needed.
+* Per request of Joe KA9OPL, added audio feedback on DTMF buttons.
+
 ## 2026-03-05
 
 * Added local echo duplex mode and local echo gain.
