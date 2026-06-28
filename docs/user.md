@@ -48,7 +48,7 @@ Network Setup (IPv6)
 Installation Instructions (Windows)
 ===================================
 
-Download the latest package from here: [https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260225-x86_64.zip](https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260225-x86_64.zip).
+Download the latest package from here: [https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260513-x86_64.zip](https://ampersand-asl.s3.us-west-1.amazonaws.com/releases/amp-win-20260513-x86_64.zip).
 
 Unzip the .zip file in convenient location.
 
